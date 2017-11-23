@@ -1,11 +1,11 @@
 package Tests;
 
-import static org.junit.Assert.fail;
-
 import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.Random;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import Classes.Numb;
@@ -14,7 +14,6 @@ import MNTree.InternalNode;
 import MNTree.LeafNode;
 import MNTree.MNTree;
 import MNTree.Node;
-import org.junit.Assert;
 
 public class MNTreeTest {
 
@@ -28,19 +27,35 @@ public class MNTreeTest {
 	
 	@Test
 	public void insertTest() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-		for (int i = 0; i < 1000; i++) {
-			mntree.add(new Numb(i));
+		Random rnd = new Random(5);
+		for (int i = 0; i < 10; i++) {
+			mntree.add(new Numb(rnd.nextInt()));
 			LinkedList<Node<Numb>> nodes = mntree.levelOrder();
+			//System.out.println(nodes.size());
+			//System.out.println("Size: "+mntree.getSize()+"inorder: "+String.valueOf(mntree.inOrder()));
 			for (Node<Numb> node : nodes) {
 				Assert.assertTrue(correctOrder(node));
 				Assert.assertTrue(correctSize(node));
 				Assert.assertFalse(isOverFlow(node));
 				Assert.assertFalse(isUnderFlow(node));
-				
+				Assert.assertTrue(inorderTest());			
 			}
 		}
+	}
+	
+	public boolean inorderTest() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		Field f = mntree.getClass().getDeclaredField("comp");
+		f.setAccessible(true);
+		Comparator<Object> comp = (Comparator<Object>)f.get(mntree);
 		
-		
+		LinkedList<Numb> inorder = mntree.inOrder();
+		Numb i=inorder.removeFirst();
+		for (Numb n : inorder) {
+			if(comp.compare(i.getKey(), n.getKey())>=0) return false;
+			//System.out.print(i.getKey()+" < "+ n.getKey()+"---");
+			i=n;
+		}
+		return true;
 	}
 
 	

@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class Patient {
-	private String name;
-	private String surname ;
-	private ArrayList<Hospitalization> hospitalizations = new ArrayList<Hospitalization>(100);
-	private int patientID;
+	private String name; //25
+	private String surname ; //25
+	private ArrayList<Hospitalization> hospitalizations = new ArrayList<Hospitalization>(100); //max 100x
+	private int patientID; 
 	private Date birthDate;
 	
 		
@@ -17,6 +17,15 @@ public class Patient {
 		this.birthDate = birthDate;
 		this.name=name;
 		this.surname=surname;
+	}
+	
+	public Patient(int patientID, Date birthDate, String name, String surname, ArrayList<Hospitalization> hospitalizations) {
+		super();
+		this.patientID = patientID;
+		this.birthDate = birthDate;
+		this.name=name;
+		this.surname=surname;
+		this.hospitalizations=hospitalizations;
 	}
 	
 	public int getPatientID() {
@@ -55,5 +64,12 @@ public class Patient {
 		return hospitalizations;
 	}
 	
+	public String toString() {
+		String s="[Patient] ID: "+patientID+", name: "+name+", surname: "+surname+", birthDate: "+birthDate.toString()+"\n";
+		for (int i = 0; i < hospitalizations.size(); i++) {
+			s+=" "+i+": "+hospitalizations.get(i)+"\n";
+		}
+		return s;
+	}
 	
 }

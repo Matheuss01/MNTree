@@ -17,6 +17,9 @@ public class MNTree<R extends Record> {
 		size=0;
 	}
 	
+	public int getSize() {
+		return size;
+	}
 	
 	//first it finds leaf which is supposed to contain the key
 	//key is searched in the leaf
@@ -26,12 +29,32 @@ public class MNTree<R extends Record> {
 		return leaf.getRecord(key);
 	}
 	
+	private LeafNode<R> minNode() {
+		Node<R> n=root;
+		if(n==null) return null; 
+		while(n.getType()=='I') {
+			n=((InternalNode<R>)n).getPointer(0);
+		}		
+		return (LeafNode<R>) n;
+	}
+	
+	private LeafNode<R> maxNode() {
+		Node<R> n=root;
+		if(n==null) return null; 
+		while(n.getType()=='I') {
+			n=((InternalNode<R>)n).getPointer(n.size);
+		}		
+		return (LeafNode<R>) n;
+	}
+	
 	public R min() {
-		return null;
+		LeafNode<R> leaf = minNode();
+		return leaf.getRecord(0);
 	}
 	
 	public R max() {
-		return null;
+		LeafNode<R> leaf = minNode();
+		return leaf.getRecord(leaf.size-1);
 	}
 	
 	//private Leaf<s>
@@ -69,6 +92,7 @@ public class MNTree<R extends Record> {
 			}else node=parent;
 		}
 		//if adding successful , then size++
+		size++;
 	}
 	
 	public void delete(Object key) {
@@ -106,7 +130,17 @@ public class MNTree<R extends Record> {
 		return res;
 	}
 	
-	
+	public LinkedList<R> inOrder(){
+		LinkedList<R> res = new LinkedList<>();
+		LeafNode<R> node =minNode();
+		while(node!=null) {
+			for (int i = 0; i < node.size; i++) {
+				res.addLast((R)node.getRecords()[i]);
+			}
+			node=node.getRight();
+		}
+		return res;
+	}
 	
 	
 }

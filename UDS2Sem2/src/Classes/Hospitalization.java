@@ -1,11 +1,11 @@
 package Classes;
 
-import java.sql.Date;
+import java.util.Date;
 
 public class Hospitalization {
 	private Date start;
 	private Date end;
-	private String diagnosis;
+	private String diagnosis; //max 40
 	
 	public Hospitalization(Date start, Date end, String diagnosis) {
 		super();
@@ -38,5 +38,8 @@ public class Hospitalization {
 		this.diagnosis = diagnosis;
 	}
 	
+	public String toString() {
+		return "[Hospitalization] Start: "+start.toString()+", End: "+end+", Diagnosis: "+diagnosis;
+	}
 	
 }

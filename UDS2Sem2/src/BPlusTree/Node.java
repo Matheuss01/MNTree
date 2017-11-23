@@ -1,8 +1,9 @@
-package MNTree;
+package BPlusTree;
 
 import java.util.Comparator;
 
 public abstract class Node<R extends Record> {
+	
 	protected char type; //I=internal , L=leaf
 	protected final int ORDER;
 	protected final Comparator<Object> comp;

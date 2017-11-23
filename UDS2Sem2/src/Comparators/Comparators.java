@@ -9,7 +9,11 @@ public class Comparators {
 		
 		@Override
 		public int compare(Object o1, Object  o2) {
-			return (int)o1-(int)o2;
+			long res= (long)(int)o1-(long)(int)o2;
+			
+			if(res>0) return 1;
+			else if(res<0) return -1;
+			else return  0;
 		}
 	};
 }

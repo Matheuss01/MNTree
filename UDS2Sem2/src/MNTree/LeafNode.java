@@ -3,7 +3,8 @@ package MNTree;
 import java.util.Comparator;
 
 public class LeafNode<R extends Record> extends Node<R> {
-	Object[] records;
+	private Object[] records;
+	private LeafNode<R> left,right;
 	
 	@SuppressWarnings("unchecked")
 	public LeafNode(int order,  Comparator<Object> comparator) {
@@ -11,7 +12,29 @@ public class LeafNode<R extends Record> extends Node<R> {
 		records =new Object[ORDER+1];
 		type='L';
 	}	
+		
 	
+	public Object[] getRecords() {
+		return records;
+	}
+
+
+	public LeafNode<R> getLeft() {
+		return left;
+	}
+
+	public void setLeft(LeafNode<R> left) {
+		this.left = left;
+	}
+
+	public LeafNode<R> getRight() {
+		return right;
+	}
+
+	public void setRight(LeafNode<R> right) {
+		this.right = right;
+	}
+
 	@Override
 	public boolean isOverflow() {
 		return size>ORDER;
@@ -30,6 +53,10 @@ public class LeafNode<R extends Record> extends Node<R> {
 			}
 		}
 		return null;
+	}
+	
+	public R getRecord(int index) {
+		return (R) records[index];
 	}
 
 	//@Override
@@ -91,6 +118,11 @@ public class LeafNode<R extends Record> extends Node<R> {
 	public LeafNode<R> split(){
 		int middleIndex=size/2;
 		LeafNode<R> newLeaf = new LeafNode<R>(ORDER,comp);
+		//dont forget when changing to disk operations -> pointers of chain
+		newLeaf.setLeft(this);
+		newLeaf.setRight(right);
+		if(right!=null) right.setLeft(newLeaf);
+		setRight(newLeaf);
 		for (int i = middleIndex; i < records.length; i++) {
 			newLeaf.records[i-middleIndex]=records[i];
 			records[i]=null;

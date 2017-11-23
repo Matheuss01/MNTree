@@ -31,7 +31,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 	public void insertIntoNode(Node<R> node) {
 		if(node.type=='L') {
 			LeafNode<R> leaf =((LeafNode<R>)node);
-			Object key = ((R)leaf.records[0]).getKey();
+			Object key = ((R)leaf.getRecords()[0]).getKey();
 			int indexToPlace=size;
 			//finding index for placing the key in
 			for (int i = 0; i < size; i++) {
@@ -153,5 +153,8 @@ public class InternalNode<R extends Record> extends Node<R> {
 		return pointers[size];
 	}
 	
+	public Node<R> getPointer(int index){
+		return pointers[index];
+	}
 	
 }
