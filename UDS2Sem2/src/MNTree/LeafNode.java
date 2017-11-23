@@ -21,6 +21,16 @@ public class LeafNode<R extends Record> extends Node<R> {
 	public boolean isUnderflow() {
 		return size<ORDER/2.0;
 	}
+	
+	@SuppressWarnings("unchecked")
+	public R getRecord(Object key) {
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(key, ((R)records[i]).getKey())==0){
+				return (R)records[i];
+			}
+		}
+		return null;
+	}
 
 	//@Override
 	public void insertIntoNode(R record) {

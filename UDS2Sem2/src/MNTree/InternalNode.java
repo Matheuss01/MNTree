@@ -41,6 +41,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 				}				
 			}
 			//rearrange keys
+			pointers[size+1]=pointers[size];
 			for (int i = size; i >0; i--) {
 				if(i==indexToPlace) break;
 				keys[i]=keys[i-1];
@@ -53,7 +54,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 			keys[indexToPlace]=key;
 		}else { //if internal Node
 			InternalNode<R> interNode =((InternalNode<R>)node);
-			Object key = ((R)interNode.keys[0]).getKey();
+			Object key = interNode.keys[0];    
 			
 			//delete first key in old node
 			for (int i = 0; i < keys.length-1; i++) {
@@ -69,6 +70,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 				}				
 			}
 			//reaarange keys
+			pointers[size+1]=pointers[size];
 			for (int i = size; i >0; i--) {
 				if(i==indexToPlace) break;
 				keys[i]=keys[i-1];
@@ -98,9 +100,6 @@ public class InternalNode<R extends Record> extends Node<R> {
 	
 	public void setFirstPointerToNode(Node<R> node) {
 		pointers[0]=node;
-		for (int i=0;i<pointers.length;i++) {
-			System.out.println(i+". "+(pointers[i]==null?"null":pointers[i].hashCode())+"SET--------");
-		}
 	}
 
 	//@Override
@@ -147,9 +146,9 @@ public class InternalNode<R extends Record> extends Node<R> {
 		return size;
 	}
 	//zatial pre Pamat
-	public Node<R> getPointer(R record) {
+	public Node<R> getPointer(Object key) {
 		for (int i = 0; i < size; i++) {
-			if(comp.compare(record.getKey(), keys[i])<0) return pointers[i];
+			if(comp.compare(key, keys[i])<0) return pointers[i];
 		}
 		return pointers[size];
 	}
