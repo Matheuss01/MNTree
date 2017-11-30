@@ -2,13 +2,19 @@ package Converters;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 
 import Classes.Hospitalization;
 import Classes.Patient;
+import Classes.Record;
 
-public class PatientConverter implements IConverter{
+public class PatientConverter extends RecordConverter{
 	
+	public PatientConverter(Comparator<Object> comparator) {
+		super(comparator);
+	}
+
 	HospitalizationConverter hospConverter = new HospitalizationConverter();
 	
 	
@@ -20,7 +26,7 @@ public class PatientConverter implements IConverter{
 		return Constants.MAXSIZE_PATIENT;
 	}
 	
-	public byte[] toByteArr(Patient p) {
+	public byte[] recordToByteArr(Record p) {
 		byte[] nameArr = new byte[Constants.MAXSIZE_NAME];
 		byte[] surnameArr = new byte[Constants.MAXSIZE_SURNAME];
 		byte[] idArr = new byte[Constants.MAXSIZE_ID];
@@ -28,13 +34,13 @@ public class PatientConverter implements IConverter{
 		byte[] numberOfHospitalizations = new byte[Integer.BYTES];
 		byte[][] hospitalizationsArr = new byte[Constants.MAX_NUM_OF_HOSPITALIZATIONS][Constants.MAXSIZE_HOSPITALIZATION];
 		
-		nameArr=ScalarConverter.toByteArr(p.getName(),Constants.MAXSIZE_NAME);
-		surnameArr=ScalarConverter.toByteArr(p.getSurname(),Constants.MAXSIZE_SURNAME);
-		idArr=ScalarConverter.toByteArr(p.getPatientID());
-		birthdateArr=ScalarConverter.toByteArr(p.getBirthDate());
-		numberOfHospitalizations=ScalarConverter.toByteArr(p.getHospitalizations().size());
-		for (int i = 0; i < p.getHospitalizations().size(); i++) {
-			hospitalizationsArr[i]=hospConverter.toByte(p.getHospitalizations().get(i));
+		nameArr=ScalarConverter.toByteArr(((Patient)p).getName(),Constants.MAXSIZE_NAME);
+		surnameArr=ScalarConverter.toByteArr(((Patient)p).getSurname(),Constants.MAXSIZE_SURNAME);
+		idArr=ScalarConverter.toByteArr(((Patient)p).getPatientID());
+		birthdateArr=ScalarConverter.toByteArr(((Patient)p).getBirthDate());
+		numberOfHospitalizations=ScalarConverter.toByteArr(((Patient)p).getHospitalizations().size());
+		for (int i = 0; i < ((Patient)p).getHospitalizations().size(); i++) {
+			hospitalizationsArr[i]=hospConverter.toByte(((Patient)p).getHospitalizations().get(i));
 		}
 		
 		byte[] res = new byte[Constants.MAXSIZE_PATIENT];
@@ -74,7 +80,7 @@ public class PatientConverter implements IConverter{
 		return res;
 	}
 	
-	public Patient toPatient(byte[] arr) {
+	public Record toRecord(byte[] arr) {
 		byte[] nameArr = new byte[Constants.MAXSIZE_NAME];
 		byte[] surnameArr = new byte[Constants.MAXSIZE_SURNAME];
 		byte[] idArr = new byte[Constants.MAXSIZE_ID];
@@ -125,7 +131,7 @@ public class PatientConverter implements IConverter{
 		return new Patient(id, birthdate, name, surname,hospitalizations);
 	}
 	
-	public byte[] toByteArr(Object key) {
+	public byte[] keyToByteArr(Object key) {
 		return ScalarConverter.toByteArr((int)key);
 	}
 	

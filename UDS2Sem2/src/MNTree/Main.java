@@ -20,8 +20,8 @@ public class Main {
 			System.out.println("Removing----------");
 			System.out.println(node);*/
 			
-			Numb n = new Numb(S.nextInt());
-			mntree.add(n);
+			//Numb n = new Numb(S.nextInt());
+		//	mntree.add(n);
 			System.out.println("Adding----------");
 			for (Node<Numb> node: mntree.levelOrder()) {
 				System.out.println(node);

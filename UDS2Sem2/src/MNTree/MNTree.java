@@ -3,6 +3,9 @@ package MNTree;
 import java.util.Comparator;
 import java.util.LinkedList;
 
+import Classes.Record;
+import MNTree.Node;
+
 public class MNTree<R extends Record> {
 	
 	private Node<R> root; 

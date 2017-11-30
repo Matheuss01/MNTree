@@ -2,6 +2,8 @@ package MNTree;
 
 import java.util.Comparator;
 
+import Classes.Record;
+
 public abstract class Node<R extends Record> {
 	protected char type; //I=internal , L=leaf
 	protected final int ORDER;

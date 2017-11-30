@@ -1,13 +1,13 @@
 package Classes;
 
-import MNTree.Record;
-
 public class Numb implements Record{
 
 	private int n;
+	private String s;
 	
-	public Numb(int n) {
+	public Numb(int n, String s) {
 		this.n=n;
+		this.s=s;
 	}
 	
 	@Override
@@ -17,11 +17,21 @@ public class Numb implements Record{
 
 	@Override
 	public Object getValue() {
-		return n;
+		return this;
 	}
 	
 	public String toString() {
-		return n+"";
+		return n+", "+s;
 	}
 
+	public int getN() {
+		return n;
+	}
+
+	public String getS() {
+		return s;
+	}
+
+	
+	
 }

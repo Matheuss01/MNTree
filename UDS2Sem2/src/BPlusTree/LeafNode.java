@@ -1,13 +1,13 @@
-package MNTree;
+package BPlusTree;
 
 import java.util.Comparator;
 
+import BPlusTree.Node;
 import Classes.Record;
-import MNTree.Node;
 
 public class LeafNode<R extends Record> extends Node<R> {
 	private Object[] records;
-	private LeafNode<R> left,right;
+	private int positionLeft=-1,positionRight=-1;
 	
 	@SuppressWarnings("unchecked")
 	public LeafNode(int order,  Comparator<Object> comparator) {
@@ -15,29 +15,30 @@ public class LeafNode<R extends Record> extends Node<R> {
 		records =new Object[ORDER+1];
 		type='L';
 	}	
-		
 	
 	public Object[] getRecords() {
 		return records;
 	}
 
 
-	public LeafNode<R> getLeft() {
-		return left;
+
+	public int getPositionLeft() {
+		return positionLeft;
 	}
 
-	public void setLeft(LeafNode<R> left) {
-		this.left = left;
+	public void setPositionLeft(int positionLeft) {
+		this.positionLeft = positionLeft;
 	}
 
-	public LeafNode<R> getRight() {
-		return right;
+	public int getPositionRight() {
+		return positionRight;
 	}
 
-	public void setRight(LeafNode<R> right) {
-		this.right = right;
+	public void setPositionRight(int positionRight) {
+		this.positionRight = positionRight;
 	}
 
+	
 	@Override
 	public boolean isOverflow() {
 		return size>ORDER;
@@ -118,14 +119,10 @@ public class LeafNode<R extends Record> extends Node<R> {
 		}
 	}
 	
-	public LeafNode<R> split(){
+	public LeafNode<R> split(){ //TODO
 		int middleIndex=size/2;
 		LeafNode<R> newLeaf = new LeafNode<R>(ORDER,comp);
-		//dont forget when changing to disk operations -> pointers of chain
-		newLeaf.setLeft(this);
-		newLeaf.setRight(right);
-		if(right!=null) right.setLeft(newLeaf);
-		setRight(newLeaf);
+		
 		for (int i = middleIndex; i < records.length; i++) {
 			newLeaf.records[i-middleIndex]=records[i];
 			records[i]=null;
@@ -140,9 +137,14 @@ public class LeafNode<R extends Record> extends Node<R> {
 	
 	
 	
+	public void setRecords(Object[] records) {
+		this.records = records;
+	}
+
 	public String toString() {
 		String s="";
-		s+="Leaf Node ["+this.hashCode()+"] <"+records[0]+","+records[size-1]+">  size: "+size+"\n";
+		if(size==0) s+="Leaf Node ["+this.hashCode()+"]"+" size: "+size+" , Left="+positionLeft+", Right: "+positionRight+" \n";
+		else s+="Leaf Node ["+this.hashCode()+"] <"+((R)records[0]).getKey()+","+((R)records[size-1]).getKey()+">  size: "+size+" , Left="+positionLeft+", Right: "+positionRight+" \n";
 		for (int i = 0; i < records.length-1; i++) {
 			if(records[i]==null) s+=" "+i+" --\n";
 			else s+=" "+i+". "+records[i]+"\n";

@@ -2,6 +2,8 @@ package BPlusTree;
 
 import java.util.Comparator;
 
+import Classes.Record;
+
 public abstract class Node<R extends Record> {
 	
 	protected char type; //I=internal , L=leaf
@@ -22,7 +24,27 @@ public abstract class Node<R extends Record> {
 		return size;
 	}
 	
+	public int getOrder() {
+		return ORDER;
+	}
 	
+	
+	public int getORDER() {
+		return ORDER;
+	}
+
+	public Comparator<Object> getComp() {
+		return comp;
+	}
+
+	public void setType(char type) {
+		this.type = type;
+	}
+
+	public void setSize(int size) {
+		this.size = size;
+	}
+
 	public abstract boolean isOverflow();
 	public abstract boolean isUnderflow();
 	//public abstract void insertIntoNode(R record);

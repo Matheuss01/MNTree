@@ -1,21 +1,37 @@
-package MNTree;
+package BPlusTree;
 
 import java.util.Comparator;
 
+import BPlusTree.Node;
 import Classes.Record;
-import MNTree.Node;
 
 public class InternalNode<R extends Record> extends Node<R> {
 
 	public Object[] keys;
-	public Node<R>[] pointers;
+	public int[] pointers;
 	
 	@SuppressWarnings("unchecked")
 	public InternalNode(int order,  Comparator<Object> comparator) {
 		super(order,comparator);
 		keys = new Object[ORDER+1];
-		pointers =/*(Node<R>[])*/ new Node[ORDER+1+1]; 
+		pointers =/*(Node<R>[])*/ new int[ORDER+1+1]; 
 		type='I';
+	}
+
+	public Object[] getKeys() {
+		return keys;
+	}
+
+	public void setKeys(Object[] keys) {
+		this.keys = keys;
+	}
+
+	public int[] getPointers() {
+		return pointers;
+	}
+
+	public void setPointers(int[] pointers) {
+		this.pointers = pointers;
 	}
 
 	@Override
@@ -28,10 +44,12 @@ public class InternalNode<R extends Record> extends Node<R> {
 		return size<ORDER/2;
 	}
 
+	
+	
 	//@Override
 	//1. inserting leafnode-> add key from first record in parameter leaf node
 	//2. inserting internalNode ->remove first key from parameter node , add it into curent node , and rearrange pointers
-	public void insertIntoNode(Node<R> node) {
+	public void insertIntoNode(Node<R> node, int indexOfNode) {
 		if(node.type=='L') {
 			LeafNode<R> leaf =((LeafNode<R>)node);
 			Object key = ((R)leaf.getRecords()[0]).getKey();
@@ -51,7 +69,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 				pointers[i]=pointers[i-1];
 			}
 			//System.out.println("N-O-D-E"+node);
-			pointers[indexToPlace+1]=node;
+			pointers[indexToPlace+1]=indexOfNode;
 			/*if(indexToPlace==size) keys[indexToPlace+1]=key;
 			else */
 			keys[indexToPlace]=key;
@@ -79,7 +97,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 				keys[i]=keys[i-1];
 				pointers[i]=pointers[i-1];
 			}
-			pointers[indexToPlace+1]=node;
+			pointers[indexToPlace+1]=indexOfNode;
 			/*if(indexToPlace==size) keys[indexToPlace+1]=key;
 			else */
 			keys[indexToPlace]=key;
@@ -92,16 +110,16 @@ public class InternalNode<R extends Record> extends Node<R> {
 		InternalNode<R> newInternal = new InternalNode<R>(ORDER,comp);
 		for (int i = middleIndex; i < keys.length; i++) {
 			newInternal.keys[i-middleIndex]=keys[i];
-			keys[i]=null;
+			//keys[i]=null;
 			newInternal.pointers[i-middleIndex]=pointers[i+1];
-			pointers[i+1]=null;
+			//pointers[i+1]=null;
 		}
 		newInternal.size=size-middleIndex-1;
 		size=middleIndex;
 		return newInternal;		
 	}
 	
-	public void setFirstPointerToNode(Node<R> node) {
+	public void setFirstPointerToNode(int node) {
 		pointers[0]=node;
 	}
 
@@ -120,7 +138,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 			for (int i = index; i < keys.length; i++) {
 				keys[i]=keys[i+1];
 			}
-			pointers[size]=null;
+			//pointers[size]=null;
 			keys[--size]=null;
 		}
 	}
@@ -130,33 +148,33 @@ public class InternalNode<R extends Record> extends Node<R> {
 		s+="Internal Node[ "+this.hashCode()+"] <"+keys[0]+","+keys[size-1]+"> size: "+size+"\n";
 		s+="KEYS\n";
 		for (int i = 0; i < ORDER; i++) {
-			if(keys[i]==null) s+=" Key "+i+"--\n";
+			if(i>=size) s+=" Key "+i+"--\n";
 			else s+=" Key "+i+". "+keys[i]+"\n";
 		}
 		s+="NODES\n";
 		for (int i = 0; i < ORDER+1; i++) {
-			if(pointers[i]==null) s+=" Node "+i+"--\n";
-			else s+=" Node "+i+". "+pointers[i].hashCode()+"\n";
+			if(i>size) s+=" Node "+i+"--\n";
+			else s+=" Node "+i+". "+pointers[i]+"\n";
 		}
 		return s;
 	}
 	
 	//toto bude pre DISK
-	public int getPointerIndex(R record) {
-		for (int i = 0; i < size; i++) {
-			if(comp.compare(record.getKey(), keys[i])<0) return i;
-		}
-		return size;
-	}
-	//zatial pre Pamat
-	public Node<R> getPointer(Object key) {
+	public int getPointer(Object key) {
 		for (int i = 0; i < size; i++) {
 			if(comp.compare(key, keys[i])<0) return pointers[i];
 		}
 		return pointers[size];
 	}
+	//zatial pre Pamat
+	/*public int getPointer(Object key) {
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(key, keys[i])<0) return pointers[i];
+		}
+		return pointers[size];
+	}*/
 	
-	public Node<R> getPointer(int index){
+	public int getPointer(int index){
 		return pointers[index];
 	}
 	

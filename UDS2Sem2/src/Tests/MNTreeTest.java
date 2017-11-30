@@ -29,7 +29,7 @@ public class MNTreeTest {
 	public void insertTest() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		Random rnd = new Random(5);
 		for (int i = 0; i < 10; i++) {
-			mntree.add(new Numb(rnd.nextInt()));
+			mntree.add(new Numb(rnd.nextInt(),"wefer"));
 			LinkedList<Node<Numb>> nodes = mntree.levelOrder();
 			//System.out.println(nodes.size());
 			//System.out.println("Size: "+mntree.getSize()+"inorder: "+String.valueOf(mntree.inOrder()));

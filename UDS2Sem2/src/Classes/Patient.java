@@ -3,7 +3,7 @@ package Classes;
 import java.util.ArrayList;
 import java.util.Date;
 
-public class Patient {
+public class Patient implements Record{
 	private String name; //25
 	private String surname ; //25
 	private ArrayList<Hospitalization> hospitalizations = new ArrayList<Hospitalization>(100); //max 100x
@@ -70,6 +70,18 @@ public class Patient {
 			s+=" "+i+": "+hospitalizations.get(i)+"\n";
 		}
 		return s;
+	}
+
+	@Override
+	public Object getKey() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object getValue() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

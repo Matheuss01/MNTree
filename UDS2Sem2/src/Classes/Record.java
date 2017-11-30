@@ -1,4 +1,4 @@
-package BPlusTree;
+package Classes;
 
 public interface Record {
 	public Object getKey();
