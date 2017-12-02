@@ -20,8 +20,6 @@ public class LeafNode<R extends Record> extends Node<R> {
 		return records;
 	}
 
-
-
 	public int getPositionLeft() {
 		return positionLeft;
 	}
@@ -63,8 +61,8 @@ public class LeafNode<R extends Record> extends Node<R> {
 		return (R) records[index];
 	}
 
-	//@Override
-	public void insertIntoNode(R record) {
+	public boolean insertIntoNode(R record) {
+		int originalSize=size;
 		boolean b=false;
 		int index=0;
 		if(size==0) {
@@ -97,7 +95,7 @@ public class LeafNode<R extends Record> extends Node<R> {
 			records[index]=record;
 			size++;
 		}
-		
+		return originalSize!=size;
 	}
 
 	//@Override
@@ -131,11 +129,6 @@ public class LeafNode<R extends Record> extends Node<R> {
 		size=middleIndex;
 		return newLeaf;		
 	}
-	
-	
-	
-	
-	
 	
 	public void setRecords(Object[] records) {
 		this.records = records;

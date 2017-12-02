@@ -47,7 +47,7 @@ public class Main {
 
 		//***************************************************************************************
 		
-		NumbConverter patConv = new NumbConverter(Comparators.numbComparator);
+	/*	NumbConverter patConv = new NumbConverter(Comparators.numbComparator);
 		BPlusTree<Numb> mntree = new BPlusTree<Numb>(3, Comparators.numbComparator,patConv,100,Integer.BYTES,14);
 		
 		Numb n1 = new Numb(5,"Five");
@@ -72,7 +72,7 @@ public class Main {
 		mntree.add(n1);
 		System.out.println("(RAMroot) "+mntree.getRoot());
 		root=mntree.getDiskManager().readNode(1);
-		System.out.println("position of root on disk: "+mntree.getMetadata().positionOfRoot);
+		System.out.println("position of root on disk: "+mntree.getMetadata().getPositionOfRoot());
 		System.out.println("(rootFromDisk) "+root);
 		
 		System.out.println("ADDING n2");
@@ -90,7 +90,7 @@ public class Main {
 		System.out.println("ADDING n4");
 		mntree.add(n4);
 		System.out.println("(RAMroot) "+mntree.getRoot());
-		int posOfRoot=mntree.getMetadata().positionOfRoot;
+		int posOfRoot=mntree.getMetadata().getPositionOfRoot();
 		System.out.println("position of root: "+posOfRoot);
 		root=mntree.getDiskManager().readNode(posOfRoot);
 		System.out.println("(rootFromDisk) "+root);
@@ -104,7 +104,7 @@ public class Main {
 		mntree.add(n11);
 		System.out.println("*********************************************");
 		System.out.println("Root from disk");
-		root=mntree.getDiskManager().readNode(mntree.getMetadata().positionOfRoot);
+		root=mntree.getDiskManager().readNode(mntree.getMetadata().getPositionOfRoot());
 		System.out.println(root);
 		
 		System.out.println("Internal1 from disk");
@@ -132,7 +132,7 @@ public class Main {
 		System.out.println("INORDER **************************");
 		for (Numb n : mntree.inOrder()) {
 			System.out.println(n);
-		}
+		}*/
 		
 		
 		

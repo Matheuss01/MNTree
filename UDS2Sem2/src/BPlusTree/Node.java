@@ -47,7 +47,5 @@ public abstract class Node<R extends Record> {
 
 	public abstract boolean isOverflow();
 	public abstract boolean isUnderflow();
-	//public abstract void insertIntoNode(R record);
-	//public abstract void removeFromNode(R record);
 	
 }

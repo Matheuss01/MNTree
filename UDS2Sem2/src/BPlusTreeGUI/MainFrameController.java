@@ -30,7 +30,7 @@ public class MainFrameController implements Initializable {
 		ScrollPane root = (ScrollPane)loader.load();
 		allBlocksController=loader.getController();
 		
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 9; i++) {
 			allBlocksController.addBlock(bPlusTree.getDiskManager().readBlock(i));
 		}
 				
@@ -62,13 +62,13 @@ public class MainFrameController implements Initializable {
 			numbs[12] = new Numb(12,"Twelve");
 			numbs[13] = new Numb(13,"Thirteen");
 			numbs[14] = new Numb(14,"Fourteen");
-			for (int i = 0; i < 15; i++) {
+			for (int i = 0; i < 10; i++) {
 				bPlusTree.add(numbs[i]);
 			}
-			Random rnd = new Random();
-			for (int i = 0; i < 15; i++) {
-				bPlusTree.add(numbs[rnd.nextInt(15)]);
-			}
+			/*Random rnd = new Random();
+			for (int i = 0; i < 4; i++) {
+				bPlusTree.add(numbs[i]);
+			}*/
 			
 		} catch (Exception e) {
 			// TODO Auto-generated catch block

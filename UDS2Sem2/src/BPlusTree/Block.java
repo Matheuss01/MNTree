@@ -8,25 +8,18 @@ import BPlusTree.LeafNode;
 public class Block<R extends Record> {
 	private static final Exception typeException = new Exception("block with incorrect type");
 	private RecordConverter recConv;
-	private  int blockSize;
-	private  int order;
-	private  int keySize;
-	private  int recordSize;
 	private Object content;
 	private char type;
+	private final Metadata metadata;
 	
-	public Block(RecordConverter rc, int blockSize, int order, int keySize, int recordSize) {
+	public Block(RecordConverter rc, Metadata metadata) {
 		recConv=rc;
-		this.blockSize=blockSize;
-		this.order=order;
-		this.keySize=keySize;
-		this.recordSize=recordSize;
-	}
-	
-	public Block() {
-		// TODO Auto-generated constructor stub
+		this.metadata=metadata;
 	}
 
+	public char getType() {
+		return type;
+	}
 	public void setContent(Node<R> content) {
 		type=content.getType();
 		this.content=content;
@@ -120,7 +113,7 @@ public class Block<R extends Record> {
 			this.content= new Metadata(blockSize,rootPos,firstFree, numOfRecords,order,keySize,recordSize,numberOfBlocks);		
 		}
 		else if(type=='L') { //1 leaf
-			System.out.println("here");
+			//System.out.println("here");
 			byte[] sizeArr = new byte[Integer.BYTES];
 			byte[] leftArr = new byte[Integer.BYTES];
 			byte[] rightArr = new byte[Integer.BYTES];
@@ -142,10 +135,10 @@ public class Block<R extends Record> {
 			int size=ScalarConverter.toInt(sizeArr);
 			int left=ScalarConverter.toInt(leftArr);
 			int right=ScalarConverter.toInt(rightArr);
-			System.out.println(size+" "+left+" "+right+" "+order);
+			//System.out.println(size+" "+left+" "+right+" "+metadata.getOrder());
 			
-			Object[] records = new Object[order+1];
-			byte[] record=new byte[recordSize]; //add record size and key size to metadata
+			Object[] records = new Object[metadata.getOrder()+1];
+			byte[] record=new byte[metadata.getRecordSize()]; //add record size and key size to metadata
 			for (int i = 0; i < size; i++) {
 				for (int j = 0; j < record.length; j++) {
 					record[j]=content[j+a];
@@ -153,7 +146,7 @@ public class Block<R extends Record> {
 				records[i]=(R)recConv.toRecord(record);
 				a+=record.length;
 			}
-			LeafNode<R> leaf = new LeafNode<R>(order, recConv.getComparator());
+			LeafNode<R> leaf = new LeafNode<R>(metadata.getOrder(), recConv.getComparator());
 			leaf.setPositionLeft(left);
 			leaf.setPositionRight(right);
 			leaf.setSize(size);
@@ -170,10 +163,10 @@ public class Block<R extends Record> {
 			
 			int size=ScalarConverter.toInt(sizeArr);
 			
-			Object[] keys = new Object[order+1]; 
-			int[] pointers = new int[order+1+1];
-			byte[] keyArr=new byte[keySize]; //add record size and key size to metadata
-			for (int i = 0; i < order; i++) {
+			Object[] keys = new Object[metadata.getOrder()+1]; 
+			int[] pointers = new int[metadata.getOrder()+1+1];
+			byte[] keyArr=new byte[metadata.getKeySize()]; //add record size and key size to metadata
+			for (int i = 0; i < metadata.getOrder(); i++) {
 				for (int j = 0; j < keyArr.length; j++) {
 					keyArr[j]=content[j+a];
 				}
@@ -182,14 +175,14 @@ public class Block<R extends Record> {
 			}
 			
 			byte[] pointerArr=new byte[Integer.BYTES]; //add record size and key size to metadata
-			for (int i = 0; i < order+1; i++) {
+			for (int i = 0; i < metadata.getOrder()+1; i++) {
 				for (int j = 0; j < pointerArr.length; j++) {
 					pointerArr[j]=content[j+a];
 				}
 				if(i<=size) pointers[i]=ScalarConverter.toInt(pointerArr);
 				a+=pointerArr.length;
 			}
-			InternalNode<R> internal =new InternalNode<>(order, recConv.getComparator());
+			InternalNode<R> internal =new InternalNode<>(metadata.getOrder(), recConv.getComparator());
 			internal.setSize(size);
 			internal.setKeys(keys);
 			internal.setPointers(pointers);
@@ -229,7 +222,7 @@ public class Block<R extends Record> {
 	
 	
 	public byte[] toByteArray() {
-		byte[] arr = new byte[blockSize];
+		byte[] arr = new byte[metadata.getBlockSize()];
 		if(type=='E') { //int 3 for emty block
 			byte[] typeArr = ScalarConverter.toByteArr((int)3);
 			byte[] nextArr = ScalarConverter.toByteArr((int)((EmptyBlock)content).getPositionOfNextFreeBlock());
@@ -252,6 +245,7 @@ public class Block<R extends Record> {
 			byte[] recordSizeArr = ScalarConverter.toByteArr(((Metadata)content).getRecordSize());
 			byte[] numberOfBlocksArr = ScalarConverter.toByteArr(((Metadata)content).getNumberOfBlocks());
 			
+			//System.out.println("arrsize:"+arr.length+", typearrsize:"+typeArr.length);
 			for (int i = 0; i < typeArr.length; i++) {
 				arr[i+a]=typeArr[i];
 			}
@@ -315,7 +309,7 @@ public class Block<R extends Record> {
 			
 			byte[] record;
 			int size=((LeafNode<R>)content).getSize();
-			System.out.println("size "+size);
+			//System.out.println("size "+size);
 			for (int i = 0; i < size; i++) {
 				record=recConv.recordToByteArr((R)((LeafNode<R>)content).getRecords()[i]);
 				for (int j = 0; j < record.length; j++) {

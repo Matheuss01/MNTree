@@ -166,13 +166,6 @@ public class InternalNode<R extends Record> extends Node<R> {
 		}
 		return pointers[size];
 	}
-	//zatial pre Pamat
-	/*public int getPointer(Object key) {
-		for (int i = 0; i < size; i++) {
-			if(comp.compare(key, keys[i])<0) return pointers[i];
-		}
-		return pointers[size];
-	}*/
 	
 	public int getPointer(int index){
 		return pointers[index];

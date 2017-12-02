@@ -1,15 +1,14 @@
 package BPlusTree;
 
 public class Metadata {
-	//typ =0 , 'M'
-	int blockSize;
-	int positionOfRoot;
-	int positionOfFirstFreeBlock;
-	int numberOfRecords;
-	int order;
-	int keySize;
-	int recordSize;
-	int numberOfBlocks;
+	private final int blockSize;
+	private int positionOfRoot;
+	private int positionOfFirstFreeBlock;
+	private int numberOfRecords;
+	private final int order;
+	private final int keySize;
+	private final int recordSize;
+	private int numberOfBlocks;
 	
 	public Metadata(int blockSize, int positionOfRoot, int positionOfFirstFreeBlock, int numberOfRecords, int order, int keySize, int recordSize, int numberOFBlocks) {
 		super();
@@ -53,6 +52,22 @@ public class Metadata {
 
 	public int getRecordSize() {
 		return recordSize;
+	}
+
+	public void setPositionOfRoot(int positionOfRoot) {
+		this.positionOfRoot = positionOfRoot;
+	}
+
+	public void setPositionOfFirstFreeBlock(int positionOfFirstFreeBlock) {
+		this.positionOfFirstFreeBlock = positionOfFirstFreeBlock;
+	}
+
+	public void setNumberOfRecords(int numberOfRecords) {
+		this.numberOfRecords = numberOfRecords;
+	}
+
+	public void setNumberOfBlocks(int numberOfBlocks) {
+		this.numberOfBlocks = numberOfBlocks;
 	}
 
 	@Override

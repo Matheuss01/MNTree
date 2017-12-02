@@ -12,5 +12,9 @@ public class EmptyBlock {
 		return positionOfNextFreeBlock;
 	}
 	
+	public String toString() {
+		return "EMPTY BLOCK\nPosition of next free block : "+positionOfNextFreeBlock;
+	}
+	
 	
 }

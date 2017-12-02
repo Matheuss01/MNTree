@@ -8,47 +8,37 @@ import java.util.Date;
 
 import Classes.Hospitalization;
 import Classes.Record;
-import Converters.Constants;
 import Converters.HospitalizationConverter;
 import Converters.RecordConverter;
 import Converters.ScalarConverter;
 
 public class DiskManager<R extends Record> {
 	private final File file;
-	private final int blockSize;
-	private final int order;
-	private final int keySize;
-	private final int recordSize;
-	private Block<R> block;
-	private Metadata metadata;
+	private final  Metadata metadata;
 	private RecordConverter rc;
 	
-	public DiskManager(File file, RecordConverter rc) throws IOException {
+	
+	public DiskManager(File file, RecordConverter rc) throws Exception {
 		this.file=file;
-		this.blockSize=readBlockSize();
-		this.order=readOrder();
-		this.keySize=readKeySize();
-		this.recordSize=readRecordSize();
+		int blockSize=readBlockSize();
+		Block<R> dummyBlock = new Block<>(null,null);
+		dummyBlock.setContent(readBytes(0, blockSize));
+		metadata = dummyBlock.getMetadata();
 		this.rc=rc;
-		block = new Block<R>(rc, blockSize, order,keySize,recordSize);
 	}
 	
-	public DiskManager(RecordConverter rc, int blockSize, int order, int keySize, int recordSize) throws IOException { //defaultny subor workingFile , ked sa nenacitava zo suboru
-		this.file=new File("src/Files/workingFile.txt");;
-		this.blockSize=blockSize;
-		this.order=order;
-		this.keySize=keySize;
-		this.recordSize=recordSize;
+	public DiskManager(Metadata metadata, RecordConverter rc) throws IOException { //defaultny subor workingFile , ked sa nenacitava zo suboru
+		this.file=new File("src/Files/workingFile.txt");
 		this.rc=rc;
-		block = new Block<R>(rc, blockSize, order,keySize,recordSize);
-		metadata=new Metadata(blockSize, 1, -1, 0, order, keySize, recordSize, 2);
+		this.metadata=metadata;
+		
 	}
 	
 	private int readBlockSize() throws IOException {
 		byte[] BlocksizeArr = new byte[Integer.BYTES];
 		RandomAccessFile raf= new RandomAccessFile(file, "r");
 		
-		raf.seek(0);
+		raf.seek(4); //velkost bloku je integer na pozicii[4]
 		raf.readFully(BlocksizeArr);
 		raf.close();
 		return ScalarConverter.toInt(BlocksizeArr);
@@ -84,7 +74,8 @@ public class DiskManager<R extends Record> {
 		return ScalarConverter.toInt(orderArr);
 	}
 	
-	private void writeBlock(int pos, byte[] block) throws IOException {
+	private void writeBytes(int pos, byte[] block) throws IOException {
+		System.out.println("bytes");
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
 		raf.seek(pos);
 		raf.write(block, 0, block.length);
@@ -94,19 +85,19 @@ public class DiskManager<R extends Record> {
 	private byte[] readBytes(int pos, int len) throws IOException {
 		byte[] arr = new byte[len];
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
-		raf.seek(pos*blockSize);
+		raf.seek(pos*metadata.getBlockSize());
 		raf.readFully(arr);
 		raf.close();
 		return arr;
 	}
 	
 	public Block<R> readBlock(int pos) throws Exception{
-		byte[] arr = new byte[blockSize];
+		byte[] arr = new byte[metadata.getBlockSize()];
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
-		raf.seek(pos*blockSize);
+		raf.seek(pos*metadata.getBlockSize());
 		raf.readFully(arr);
 		raf.close();
-		Block<R> block = new Block<>(rc,blockSize,order,keySize,recordSize);
+		Block<R> block = new Block<R>(rc, metadata);
 		block.setContent(arr);
 		return block;
 	}
@@ -116,61 +107,51 @@ public class DiskManager<R extends Record> {
 	    raf.setLength(newLength);
 	}
 	
-	public Metadata createMetadata(int blockSize, int positionOfRoot, int positionOfFirstFreeBlock, int numberOfRecords, int order, int keySize, int recordSize, int numberOfBlocks) {
-		return new Metadata(blockSize, positionOfRoot, positionOfFirstFreeBlock, numberOfRecords, order, keySize, recordSize, numberOfBlocks);
-	}
-	
 	private void writeBlock(int pos, Block<R> block) throws IOException {
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
-		raf.seek(pos*blockSize);
-		raf.write(block.toByteArray(), 0, blockSize);
+		raf.seek(pos*metadata.getBlockSize());
+		System.out.println(block.getType()+" "+ pos+", pocet blokov: "+metadata.getNumberOfBlocks());
+		raf.write(block.toByteArray(), 0, metadata.getBlockSize());
 		raf.close();
 	}
 	
 	public void writeMetadata(Metadata metadata) throws IOException {
+		//System.out.println("write metadata");
+		Block<R> block = new Block<R>(rc, metadata);
 		block.setContent(metadata);
 		writeBlock(0, block);
 	}
 	
 	public void writeNode(int position, Node<R> node) throws Exception {
+		Block<R> block = new Block<R>(rc, metadata);
 		block.setContent(node);
 		writeBlock(position,block);
 	}
 	
 	public Node<R> readNode(int position) throws IOException, Exception{
-		block.setContent(readBytes(position, blockSize));
+		Block<R> block = new Block<R>(rc, metadata);
+		block.setContent(readBytes(position, metadata.getBlockSize()));
 		return block.getNode();
 	}
 	
 	public Metadata readMetadata() throws IOException, Exception{
-		block.setContent(readBytes(0, blockSize));
+		Block<R> block = new Block<R>(rc, metadata);
+		block.setContent(readBytes(0, metadata.getBlockSize()));
 		return block.getMetadata();
 	}
 	
 	public EmptyBlock readEmptyBlock(int pos) throws IOException, Exception {
-		block.setContent(readBytes(pos, blockSize));
+		Block<R> block = new Block<R>(rc, metadata);
+		block.setContent(readBytes(pos, metadata.getBlockSize()));
 		return block.getEmptyBlock();
 	}
 	
-	/*public int getFreeBlockAndSetNew() {
-		int res;
-		int numberOfBlocks = metadata.numberOfBlocks;
-		int firstFree  = metadata.positionOfFirstFreeBlock;
-		if(firstFree==-1) {
-			res=numberOfBlocks;
-			numberOfBlocks++;
-		}
-		else {
-			res=firstFree;
-		}
-	}*/
-	
 	public int writeNewNode(Node<R> node) throws IOException, Exception { //returns posit. of new block
-		int numberOfBlocks = metadata.numberOfBlocks;
-		int firstFree  = metadata.positionOfFirstFreeBlock;
+		int numberOfBlocks = metadata.getNumberOfBlocks();
+		int firstFree  = metadata.getPositionOfFirstFreeBlock();
 		int pos;
 		
-		if(firstFree==-1) {   // ynamena ze nie je volny blok -> subor je plny , volny blok bude za koncom suboru
+		if(firstFree==-1) {   // znamena ze nie je volny blok -> subor je plny , volny blok bude za koncom suboru
 			pos=numberOfBlocks;
 			numberOfBlocks++;
 		}else {
@@ -178,8 +159,8 @@ public class DiskManager<R extends Record> {
 			EmptyBlock emptyBlock = readEmptyBlock(firstFree);
 			firstFree=emptyBlock.getPositionOfNextFreeBlock();
 		}
-		metadata.positionOfFirstFreeBlock=firstFree;
-		metadata.numberOfBlocks=numberOfBlocks;
+		metadata.setPositionOfFirstFreeBlock(firstFree);
+		metadata.setNumberOfBlocks(numberOfBlocks);
 		
 		writeNode(pos, node);
 		return pos;
@@ -211,7 +192,7 @@ public class DiskManager<R extends Record> {
 	
 	
 	public static void main(String[] args) throws IOException {
-		File f = new File("src/Files/testFile.txt");
+	/*	File f = new File("src/Files/testFile.txt");
 		DiskManager dm = new DiskManager(f, null); // premenit z null
 		byte[] name = new byte[50];
 		for (int i = 0; i < name.length; i++) {
@@ -229,7 +210,7 @@ public class DiskManager<R extends Record> {
 		dm.setFileLength(40);
 		System.out.println("size:"+f.length()+", usable space: "+f.getUsableSpace()+", total space: "+f.getTotalSpace()+", free space: "+f.getFreeSpace());
 		
-		
+		*/
 		
 		
 		
