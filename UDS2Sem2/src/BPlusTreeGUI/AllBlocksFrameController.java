@@ -16,8 +16,8 @@ public class AllBlocksFrameController {
 		String s="Block # "+numOfBlocks+++"\n\n";
 		s+=block.toString();
 		blockText.setText(s);
-		blockText.setMinWidth(300);
-		blockText.setPrefWidth(310);
+		blockText.setMinWidth(450);
+		blockText.setPrefWidth(450);
 		hBox.getChildren().add(blockText);
 	}
 	

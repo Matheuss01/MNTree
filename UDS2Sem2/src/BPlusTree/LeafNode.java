@@ -36,6 +36,13 @@ public class LeafNode<R extends Record> extends Node<R> {
 		this.positionRight = positionRight;
 	}
 
+	static boolean isOverflow(int size, int order) {
+		return size>order;
+	}
+	
+	static boolean isUnderflow(int size, int order) {
+		return size<order/2.0;
+	}
 	
 	@Override
 	public boolean isOverflow() {
@@ -99,11 +106,11 @@ public class LeafNode<R extends Record> extends Node<R> {
 	}
 
 	//@Override
-	public void removeFromNode(R record) {
+	public void removeFromNode(Object key) {
 		boolean b=false;
 		int index=0;
 		for (int i = 0; i < size; i++) {
-			if(comp.compare(record, records[i])==0) {
+			if(comp.compare(key, ((R)records[i]).getKey())==0) {
 				b=true;
 				index=i;
 				break;
@@ -144,7 +151,61 @@ public class LeafNode<R extends Record> extends Node<R> {
 		}
 		return s;
 	}
+	
+	
+	
+	public boolean borrowFromSibling(LeafNode<R> right, LeafNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		//na zaciatku je uz stary record vymazany
+		int sizeRight=right==null?-1:right.getSize();
+		int sizeLeft=left==null?-1:left.getSize();
+		//ked bude -1 znamena ze vzdy bude underflow siblinga a do tej vetvy nepojde
+		
+		if(!LeafNode.isUnderflow(sizeRight-1, ORDER)) {
+			borrowFromRightSibling(right, parent,keyToRemove);
+			return true;
+		}
+		else if(!LeafNode.isUnderflow(sizeLeft-1, ORDER)) {
+			borrowFromLeftSibling(left, parent,keyToRemove);
+			return true;
+		}
+		return false;
+	}
+	
+	private void borrowFromLeftSibling(LeafNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		R recordToBorrow = (R)left.getRecords()[left.getSize()-1];
+		left.removeFromNode(recordToBorrow.getKey());
+		
+		insertIntoNode(recordToBorrow); ///it has to be position 0 ...-> check it
+		//System.out.println("----"+keyToRemove+" , "+recordToBorrow.getKey());
+		parent.replaceKey(keyToRemove, recordToBorrow.getKey());
+		
+	}
+	
+	private void borrowFromRightSibling(LeafNode<R> right, InternalNode<R> parent, Object keyToRemove) {
+		R recordToBorrow = (R)right.getRecords()[0];
+		right.removeFromNode(recordToBorrow.getKey());
+		
+		insertIntoNode(recordToBorrow); ///it has to be position size ...-> check it
+		parent.replaceKey(recordToBorrow.getKey(),((R)right.getRecords()[0]).getKey()); //v otcovi sa nahradi kluc na prvok co siel za prvkom na pozicii 0 , terazjsim prvkom na poziii 0 v right siblingovi
+	}
+	
+	//****************************MERGE
+	
+	
+	public void mergeWithLeftSibling(LeafNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		while(size>0) {
+			left.insertIntoNode((R)records[size-1]);
+			removeFromNode(((R)records[size-1]).getKey());
+		}
+		parent.removeFromNode(keyToRemove);
+		if(parent.getSize()==0) parent.setPhantomKey(keyToRemove);
+	}
+	
+	
 
 
+	
+	
+	
 
 }

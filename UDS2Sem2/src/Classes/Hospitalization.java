@@ -1,5 +1,6 @@
 package Classes;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class Hospitalization {
@@ -13,6 +14,14 @@ public class Hospitalization {
 		this.end = end;
 		this.diagnosis = diagnosis;
 	}
+	
+	public Hospitalization(Date start,String diagnosis) {
+		super();
+		this.start = start;
+		this.end = null;
+		this.diagnosis = diagnosis;
+	}
+	
 	
 	public Date getStart() {
 		return start;
@@ -39,7 +48,8 @@ public class Hospitalization {
 	}
 	
 	public String toString() {
-		return "[Hospitalization] Start: "+start.toString()+", End: "+end+", Diagnosis: "+diagnosis;
+		SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
+		return "[Hospitalization] Start: "+f.format(start)+", End: "+(end.getTime()==Long.MAX_VALUE?"---":f.format(end))+", Diagnosis: "+diagnosis;
 	}
 	
 }

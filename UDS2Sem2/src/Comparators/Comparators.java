@@ -16,4 +16,17 @@ public class Comparators {
 			else return  0;
 		}
 	};
+	
+	
+	public static Comparator<Object> patientComparator= new Comparator<Object>() {
+		
+		@Override
+		public int compare(Object o1, Object  o2) {
+			long res= (long)(int)o1-(long)(int)o2;
+			
+			if(res>0) return 1;
+			else if(res<0) return -1;
+			else return  0;
+		}
+	};
 }

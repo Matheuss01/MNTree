@@ -9,6 +9,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 
 	public Object[] keys;
 	public int[] pointers;
+	private Object phantomKey;
 	
 	@SuppressWarnings("unchecked")
 	public InternalNode(int order,  Comparator<Object> comparator) {
@@ -17,7 +18,16 @@ public class InternalNode<R extends Record> extends Node<R> {
 		pointers =/*(Node<R>[])*/ new int[ORDER+1+1]; 
 		type='I';
 	}
-
+	
+	public Object getPhantomKey() {
+		return phantomKey;
+	}
+	
+	public void setPhantomKey(Object key) {
+		phantomKey=key;
+	}
+	
+	
 	public Object[] getKeys() {
 		return keys;
 	}
@@ -42,6 +52,10 @@ public class InternalNode<R extends Record> extends Node<R> {
 	@Override
 	public boolean isUnderflow() {
 		return size<ORDER/2;
+	}
+	
+	static boolean isUnderflow(int size, int order) {
+		return size<order/2;
 	}
 
 	
@@ -77,6 +91,10 @@ public class InternalNode<R extends Record> extends Node<R> {
 			InternalNode<R> interNode =((InternalNode<R>)node);
 			Object key = interNode.keys[0];    
 			
+			/*if((Integer)key == 30) {
+				System.out.println("tuu");
+			}*/
+			
 			//delete first key in old node
 			for (int i = 0; i < keys.length-1; i++) {
 				interNode.keys[i]=interNode.keys[i+1];
@@ -101,7 +119,7 @@ public class InternalNode<R extends Record> extends Node<R> {
 			/*if(indexToPlace==size) keys[indexToPlace+1]=key;
 			else */
 			keys[indexToPlace]=key;
-		}		
+		}
 		size++;
 	}
 	
@@ -124,28 +142,31 @@ public class InternalNode<R extends Record> extends Node<R> {
 	}
 
 	//@Override
-	public void removeFromNode(R record, Node<R> node) {
+	public void removeFromNode(Object key) { 
 		boolean b=false;
 		int index=0;
 		for (int i = 0; i < size; i++) {
-			if(comp.compare(record.getKey(), keys[i])==0) {
+			if(comp.compare(key, keys[i])==0) {
 				b=true;
 				index=i;
 				break;
 			}
 		}
 		if(b) {
-			for (int i = index; i < keys.length; i++) {
+			for (int i = index; i < keys.length-1; i++) {
 				keys[i]=keys[i+1];
 			}
-			//pointers[size]=null;
-			keys[--size]=null;
+			for (int i = index+1; i < pointers.length-1; i++) {
+				pointers[i]=pointers[i+1];
+			}
+			size--;
 		}
+		phantomKey=keys[0];
 	}
 	
 	public String toString() {
 		String s="";
-		s+="Internal Node[ "+this.hashCode()+"] <"+keys[0]+","+keys[size-1]+"> size: "+size+"\n";
+		s+="Internal Node[ "+this.hashCode()+"] <"+(size>0?(keys[0]+","+keys[size-1]):"empty")+"> size: "+size+"\n";
 		s+="KEYS\n";
 		for (int i = 0; i < ORDER; i++) {
 			if(i>=size) s+=" Key "+i+"--\n";
@@ -167,8 +188,141 @@ public class InternalNode<R extends Record> extends Node<R> {
 		return pointers[size];
 	}
 	
+	/*
+	 * returns position of block which is left sibling for a node starting with a given key , if first son of a node then returns -1
+	 */
+	public int getLeftSibling(Object key) {
+		if(size==0) return -1;
+		/*if(size==0) {
+			if(comp.compare(key, phantomKey)<0) return pointers[0];
+			else return -1;
+		}*/
+		
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(key, keys[i])<=0) return pointers[i];
+		}
+		return pointers[size-1];
+	}
+	
+	public int getRightSibling(Object key) {
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(key, keys[i])<0) return pointers[i+1];
+		}
+		return -1;
+	}
+	
 	public int getPointer(int index){
 		return pointers[index];
 	}
 	
+	public boolean containsKey(Object key) {
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(key, keys[i])==0) return true;
+		}
+		return false;
+	}
+	
+	public void replaceKey(R oldRecord, R newRecord) {
+		for (int i = 0; i < size; i++) {
+			if(comp.compare(oldRecord.getKey(), keys[i])==0) {
+				keys[i]=newRecord.getKey();
+			}
+		}
+	}
+	
+	public void replaceKey(Object oldKey, Object newKey) {
+		for (int i = 0; i < size; i++) {
+			//System.out.println(size+" "+oldKey+" "+keys[i]+" "+newKey);
+			if(comp.compare(oldKey, keys[i])==0) {
+				keys[i]=newKey;
+			}
+		}
+	}
+	
+	private Object getKeyForRightRotation(InternalNode<R> parent) {
+		Object key;
+		if(size==0) key=phantomKey;
+		else key=keys[0];
+		
+		for (int i = 0; i < parent.getSize(); i++) {
+			if(comp.compare(key, parent.getKeys()[i])<0) return parent.getKeys()[i];;
+		}
+		return parent.getKeys()[parent.getSize()-1];
+	}
+	
+	private Object getKeyForLeftRotation(InternalNode<R> parent) { // pointer za klucom
+		for (int i = 0; i < parent.getSize(); i++) {
+			if(comp.compare(keys[0], parent.getKeys()[i])<0) return parent.getKeys()[i-1];
+		}
+		return parent.getKeys()[parent.getSize()-1];
+	}
+	
+	//*******BORROW
+	
+	public boolean borrowFromSibling(InternalNode<R> right, InternalNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		//na zaciatku je uz stary record vymazany
+		int sizeRight=right==null?-1:right.getSize();
+		int sizeLeft=left==null?-1:left.getSize();
+		//ked bude -1 znamena ze vzdy bude underflow siblinga a do tej vetvy nepojde
+		
+		if(!InternalNode.isUnderflow(sizeRight-1, ORDER)) {
+			borrowFromRightSibling(right, parent,keyToRemove);
+			return true;
+		}
+		else if(!InternalNode.isUnderflow(sizeLeft-1, ORDER)) {
+			borrowFromLeftSibling(left, parent,keyToRemove);
+			return true;
+		}
+		return false;
+	}
+	
+	private void borrowFromLeftSibling(InternalNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		Object keyToBorrow = left.getKeys()[left.getSize()-1];
+		int positionToBorrow = left.getPointer(left.getSize());
+		Object KeyToReplaceInParent=getKeyForRightRotation(parent);
+		left.removeFromNode(keyToBorrow);
+		parent.replaceKey(KeyToReplaceInParent, keyToBorrow);
+		
+		for (int i = size; i > 0; i--) {
+			keys[i] = keys[i-1];
+		}
+		for (int i = size+1; i > 0; i--) {
+			pointers[i] = pointers[i-1];
+		}
+		
+		keys[0]=KeyToReplaceInParent;
+		pointers[0]=positionToBorrow;
+		size++;
+		
+	}
+	
+	private void borrowFromRightSibling(InternalNode<R> right, InternalNode<R> parent, Object keyToRemove) {
+		Object keyToBorrow = right.getKeys()[0];
+		int positionToBorrow = right.getPointer(0);
+		Object KeyToReplaceInParent=getKeyForLeftRotation(parent);
+		right.removeFromNode(keyToBorrow);
+		parent.replaceKey(KeyToReplaceInParent, keyToBorrow);
+		
+		keys[size]=KeyToReplaceInParent;
+		pointers[size+1]=positionToBorrow;
+		size++;
+	}
+	
+	public void mergeWithLeftSibling(InternalNode<R> left, InternalNode<R> parent, Object keyToRemove) {
+		
+		Object parentsKey = getKeyForLeftRotation(parent);
+		left.getKeys()[left.getSize()]=parentsKey;
+		for (int i = 0; i < size; i++) {
+			left.getKeys()[left.getSize()+1+i]=keys[i];
+			left.getPointers()[left.getSize()+1+i]=pointers[i];
+		}
+		left.setSize(left.getSize()+1+size);
+		left.getPointers()[left.getSize()]=pointers[size];
+		
+		parent.setPhantomKey(parent.getKeys()[0]);
+		parent.setSize(parent.getSize()-1);
+		
+		size=0;
+	}
+
 }

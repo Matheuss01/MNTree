@@ -10,6 +10,11 @@ public class Numb implements Record{
 		this.s=s;
 	}
 	
+	public Numb(int n) {
+		this.n=n;
+		this.s="Numb#"+n;
+	}
+	
 	@Override
 	public Object getKey() {
 		return n;

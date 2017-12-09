@@ -127,11 +127,12 @@ public class PatientConverter extends RecordConverter{
 			a+=hospitalizationsArr[0].length;
 			hospitalizations.add(hospConverter.toHospitalization(hospitalizationsArr[i]));
 		}
-		
+		System.out.println(a);
 		return new Patient(id, birthdate, name, surname,hospitalizations);
 	}
 	
 	public byte[] keyToByteArr(Object key) {
+		if(key==null) return ScalarConverter.toByteArr(0);
 		return ScalarConverter.toByteArr((int)key);
 	}
 	

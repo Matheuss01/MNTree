@@ -75,7 +75,7 @@ public class DiskManager<R extends Record> {
 	}
 	
 	private void writeBytes(int pos, byte[] block) throws IOException {
-		System.out.println("bytes");
+		//System.out.println("bytes");
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
 		raf.seek(pos);
 		raf.write(block, 0, block.length);
@@ -110,7 +110,7 @@ public class DiskManager<R extends Record> {
 	private void writeBlock(int pos, Block<R> block) throws IOException {
 		RandomAccessFile raf= new RandomAccessFile(file, "rw");
 		raf.seek(pos*metadata.getBlockSize());
-		System.out.println(block.getType()+" "+ pos+", pocet blokov: "+metadata.getNumberOfBlocks());
+		//System.out.println(block.getType()+" "+ pos+", pocet blokov: "+metadata.getNumberOfBlocks());
 		raf.write(block.toByteArray(), 0, metadata.getBlockSize());
 		raf.close();
 	}
@@ -164,6 +164,12 @@ public class DiskManager<R extends Record> {
 		
 		writeNode(pos, node);
 		return pos;
+	}
+	
+	public void writeEmptyBlock(int pos, EmptyBlock emptyBlock) throws IOException {
+		Block<R> block = new Block<R>(rc, metadata);
+		block.setContent(emptyBlock);
+		writeBlock(pos,block);
 	}
 	
 	

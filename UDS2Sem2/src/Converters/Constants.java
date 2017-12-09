@@ -18,5 +18,7 @@ public final class Constants {
 	
 	public static final int MAXSIZE_PATIENT = MAXSIZE_NAME+MAXSIZE_SURNAME+MAXSIZE_ID+MAXSIZE_BIRTHDATE+MAX_NUM_OF_HOSPITALIZATIONS*MAXSIZE_HOSPITALIZATION + ACTUAL_NUM_OF_HOSPITALIZATIONS;
 	
-	
+	/*public static void main(String[] args) {
+		System.out.println(MAXSIZE_PATIENT);
+	}*/
 }
