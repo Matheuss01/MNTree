@@ -177,7 +177,7 @@ public class LeafNode<R extends Record> extends Node<R> {
 		
 		insertIntoNode(recordToBorrow); ///it has to be position 0 ...-> check it
 		//System.out.println("----"+keyToRemove+" , "+recordToBorrow.getKey());
-		parent.replaceKey(keyToRemove, recordToBorrow.getKey());
+		parent.replaceKey(((R)records[1]).getKey(), recordToBorrow.getKey());   //pridane
 		
 	}
 	
@@ -197,8 +197,7 @@ public class LeafNode<R extends Record> extends Node<R> {
 			left.insertIntoNode((R)records[size-1]);
 			removeFromNode(((R)records[size-1]).getKey());
 		}
-		parent.removeFromNode(keyToRemove);
-		if(parent.getSize()==0) parent.setPhantomKey(keyToRemove);
+		parent.removeFromNode(this);
 	}
 	
 	

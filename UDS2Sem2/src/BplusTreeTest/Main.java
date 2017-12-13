@@ -1,4 +1,4 @@
-package BPlusTreeGUI;
+package BplusTreeTest;
 
 import java.io.IOException;
 import java.net.URL;
@@ -15,7 +15,7 @@ public class Main extends Application {
 	@Override
 	public void start(Stage stage) {
 		try {
-			URL url = getClass().getResource("/BPlusTreeGUI/MainFrame.fxml");
+			URL url = getClass().getResource("/BplusTreeTest/MainFrame.fxml");
 			FXMLLoader loader = new FXMLLoader(url);
 			BorderPane root = (BorderPane)loader.load();
 			mfc=((MainFrameController)loader.getController());

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import Classes.Record;
+import Converters.Constants;
 import Converters.RecordConverter;
 
 public class BPlusTree<R extends Record> {
@@ -17,10 +18,22 @@ public class BPlusTree<R extends Record> {
 	private final Metadata metadata;
 	private HashMap<Node<R>,Integer> mapping = new HashMap<>();
 	
-	public BPlusTree(int order, Comparator<Object> comparator, RecordConverter recordConverter, int blockSize, int keySize, int recordSize) throws Exception { //bez nacitania stromu zo subotu, strom sa vytvara v pamati
+	public BPlusTree(int leafOrder,int internalOrder, Comparator<Object> comparator, RecordConverter recordConverter, int blockSize, int keySize, int recordSize) throws Exception { //bez nacitania stromu zo subotu, strom sa vytvara v pamati
 		this.comp=comparator;
-		root= new LeafNode<R>(order, comparator);
-		metadata=new Metadata(blockSize, 1, -1, 0, order, keySize, recordSize,2); //-1-> no empty block , root je 2. block cize position 1
+		root= new LeafNode<R>(leafOrder, comparator);
+		metadata=new Metadata(blockSize, 1, -1, 0, leafOrder,internalOrder,  keySize, recordSize,2); //-1-> no empty block , root je 2. block cize position 1
+		diskManager = new DiskManager<R>(metadata, recordConverter);
+		diskManager.writeMetadata(metadata);
+		diskManager.writeNode(metadata.getPositionOfRoot(), root);		
+	}
+	
+	public BPlusTree(Comparator<Object> comparator, RecordConverter recordConverter, int blockSize, int keySize, int recordSize) throws Exception { //bez nacitania stromu zo subotu, strom sa vytvara v pamati
+		this.comp=comparator;
+		int leafOrder =(blockSize-Constants.MAXSIZE_METADATA_LEAF_NODE)/recordSize;
+		int internalOrder=(blockSize-Constants.MAXSIZE_METADATA_INTERNAL_NODE-Integer.BYTES)/(Integer.BYTES+keySize);
+				
+		root= new LeafNode<R>(leafOrder, comparator);
+		metadata=new Metadata(blockSize, 1, -1, 0, leafOrder,internalOrder,  keySize, recordSize,2); //-1-> no empty block , root je 2. block cize position 1
 		diskManager = new DiskManager<R>(metadata, recordConverter);
 		diskManager.writeMetadata(metadata);
 		diskManager.writeNode(metadata.getPositionOfRoot(), root);		
@@ -74,7 +87,7 @@ public class BPlusTree<R extends Record> {
 	}
 	
 	private LeafNode<R> minNode() throws IOException, Exception {
-		Node<R> n=root;
+		Node<R> n=diskManager.readNode(metadata.getPositionOfRoot());
 		if(n.size==0) return null; 
 		int index=0;
 		while(n.getType()=='I') {			
@@ -85,7 +98,7 @@ public class BPlusTree<R extends Record> {
 	}
 	
 	private LeafNode<R> maxNode() throws IOException, Exception {
-		Node<R> n=root;
+		Node<R> n=diskManager.readNode(metadata.getPositionOfRoot());
 		if(n.size==0) return null; 
 		int index;
 		while(n.getType()=='I') {
@@ -111,7 +124,7 @@ public class BPlusTree<R extends Record> {
 		LinkedList<Node<R>> path = getTraversalToLeaf(record.getKey());
 		
 		//*********adding overroot
-		InternalNode<R> overRoot = new InternalNode<R>(metadata.getOrder(), comp);
+		InternalNode<R> overRoot = new InternalNode<R>(metadata.getInternalOrder(), comp);
 		path.addFirst(overRoot);
 		LeafNode<R> leaf = (LeafNode<R>)path.removeLast();
 		InternalNode<R> parent=(InternalNode<R>)path.getLast();;
@@ -183,15 +196,17 @@ public class BPlusTree<R extends Record> {
 	//or leaf which is designated for the record
 	public LinkedList<Node<R>> getTraversalToLeaf(Object key) throws IOException, Exception{
 		LinkedList<Node<R>> res = new LinkedList<>();
-		mapping.clear(); // vymaze sa mapovanie
-		mapping.put(root, metadata.getPositionOfRoot());
-		Node<R> n=root;
+		mapping.clear(); // vymaze sa mapovanie	
+		Node<R> n=diskManager.readNode(metadata.getPositionOfRoot());
+		mapping.put(n, metadata.getPositionOfRoot());
+		n.setBlockPosition(metadata.getPositionOfRoot());
 		int index;
-		if(n==null) return res; 
 		while(n.getType()=='I') {
 			res.add(n);
 			index=((InternalNode<R>)n).getPointer(key);
 			n=diskManager.readNode(index);
+			n.setParent((InternalNode<R>)res.getLast());
+			n.setBlockPosition(index);
 			mapping.put(n, index);
 		}		
 		res.add(n);
@@ -217,13 +232,9 @@ public class BPlusTree<R extends Record> {
 		LinkedList<R> inOrder = new LinkedList<>();
 		LeafNode<R> leaf = minNode();
 		while(leaf.getPositionRight()!=-1) {
-			//System.out.println("----------");
-		//	System.out.println(leaf);
-			//System.out.println("----------");
 			for (int i = 0; i < leaf.size; i++) {
 				inOrder.add(leaf.getRecord(i));
 			}
-			//System.out.println("position right: "+leaf.getPositionRight());
 			leaf=(LeafNode<R>)diskManager.readNode(leaf.getPositionRight());
 		}		
 		for (int i = 0; i < leaf.size; i++) inOrder.add(leaf.getRecord(i));
@@ -253,33 +264,30 @@ public class BPlusTree<R extends Record> {
 	
 	public void delete(Object key) throws IOException, Exception {
 		LinkedList<Node<R>> path = getTraversalToLeaf(key);
-		LinkedList<Node<R>> path2 = new LinkedList<Node<R>>();
-		/*for (Node<R> node : path) {
-			path2.addFirst(node);
-		}*/
-		LeafNode<R> leaf = (LeafNode<R>)path.removeLast();
+
+		LeafNode<R> leaf = (LeafNode<R>)path.getLast();
 		Object oldFirstKey = leaf.getRecord(0).getKey();
 		if(leaf.getRecord(key)==null) return;                                // zadany kluc neexistuje
-		metadata.setNumberOfRecords(metadata.getNumberOfRecords()-1);
-		InternalNode<R> parent = (InternalNode<R>)path.getLast();
-		//path.addLast(leaf);
-		leaf.removeFromNode(key);
-		//InternalNode<R> internalToAlterKeyIn = getInternalToUpdateAfterDelete(path, key, oldFirstKey); // v tomto node sa este na konci musi upravit kluc na novy
+		metadata.setNumberOfRecords(metadata.getNumberOfRecords()-1);        //kluc je v leafe bude sa vymazavat
+		InternalNode<R> parent = leaf.getParent();                                                                  //!!!!!osetrit ak leaf bol root a parent  je null
+
+		leaf.removeFromNode(key); 
 		
-		int posRight=getPositionOfRightSibling(leaf, parent);
-		int posLeft=getPositionOfLeftSibling(leaf, parent);
-		LeafNode<R> right = (LeafNode<R>)getRightSibling(leaf, parent);
-		LeafNode<R> left = (LeafNode<R>)getLeftSibling(leaf, parent);
-		if(right!=null) mapping.put(right, posRight);
-		if(left!=null) mapping.put(left, posLeft);
+		LeafNode<R> right=null,left=null;
+		if(parent!=null) { //ak nie je root
+			right = (LeafNode<R>)getRightSibling(leaf, parent);
+			left = (LeafNode<R>)getLeftSibling(leaf, parent);
+		}
+		
+		replaceOldKeys(path, key, leaf.getRecord(0).getKey());  //here null!!
 		
 		//case 1 ->no underflow
-		if(!leaf.isUnderflow()) {
+		if(!leaf.isUnderflow() || leaf.getParent()==null) {
 			diskManager.writeNode(mapping.get(leaf), leaf);
-			
 		}
 		//case 2 ->(Only for leaf) something to borrow from sibling which has the same parent
-		else if(leaf.borrowFromSibling(right, left, parent, oldFirstKey)){
+		//if n is root , it has none to borrow from , anyway
+		else if(parent!=null && leaf.borrowFromSibling(right, left, parent, oldFirstKey)){ 
 			if(left!= null) diskManager.writeNode(mapping.get(left), left);
 			if(right!= null) diskManager.writeNode(mapping.get(right), right);
 			diskManager.writeNode(mapping.get(leaf), leaf);
@@ -291,47 +299,46 @@ public class BPlusTree<R extends Record> {
 			//return;
 		}
 
-		
-		InternalNode<R> rightSibling,leftSibling;	
-		InternalNode<R> node=(InternalNode<R>)path.removeLast();
-		parent=(InternalNode<R>)path.removeLast();
-		
-		//System.out.println(node+"\n\n\n"+parent);
-		boolean canBorrow=false;
-		while(node.isUnderflow() && node!=root) {
-			//todo merge,borrow
-			posRight=getPositionOfRightSibling(node, parent);
-			posLeft=getPositionOfLeftSibling(node, parent);
-			rightSibling = (InternalNode<R>)getRightSibling(node, parent);
-			leftSibling = (InternalNode<R>)getLeftSibling(node, parent);			
-			if(right!=null) mapping.put(right, posRight);
-			if(left!=null) mapping.put(left, posLeft);
-			canBorrow=node.borrowFromSibling(rightSibling, leftSibling, parent, key);
-			if(canBorrow) {
+		if(leaf.parent!=null) { //znamena ze  leaf bol rootom a dalej sa nebude pokracovat
+			InternalNode<R> rightSibling,leftSibling;	
+			InternalNode<R> node=parent;
+			parent=parent.getParent(); 
+			
+			//System.out.println(node+"\n\n\n"+parent);
+			boolean canBorrow=false;
+			while(node.isUnderflow() && node.getParent()!=null) {
+				//todo merge,borrow
+				rightSibling = (InternalNode<R>)getRightSibling(node, parent);
+				leftSibling = (InternalNode<R>)getLeftSibling(node, parent);			
+
+				canBorrow=node.borrowFromSibling(rightSibling, leftSibling, parent, key);
+				if(canBorrow) {
+					diskManager.writeNode(mapping.get(node), node);
+					if(rightSibling!=null) diskManager.writeNode(mapping.get(rightSibling), rightSibling);
+					if(leftSibling!=null) diskManager.writeNode(mapping.get(leftSibling), leftSibling);
+				}
+				else {//mergovalo sa
+					//System.out.println(node);
+					mergeInternals(node, rightSibling, leftSibling, parent, key);
+				}
+						
+				node=parent;
+				parent=node.getParent();
+
+			}
+			
+			//if root empty
+			if(node.getSize()==0) {
+				metadata.setPositionOfRoot(node.getPointer(0));
+				diskManager.addEmptyBlock(mapping.get(node));
+			}
+			else 
 				diskManager.writeNode(mapping.get(node), node);
-				if(rightSibling!=null) diskManager.writeNode(mapping.get(rightSibling), rightSibling);
-				if(leftSibling!=null) diskManager.writeNode(mapping.get(leftSibling), leftSibling);
-			}
-			else {//mergovalo sa
-				mergeInternals(node, rightSibling, leftSibling, parent, key);
-			}
-					
-			node=parent;
-			if(!path.isEmpty()) {
-				parent=(InternalNode<R>)path.removeLast();				//ak je prazdny prehlasit za empty node inak le ulozit
-			}
-			else break;
 		}
-		diskManager.writeNode(mapping.get(node), node);
 				
 		
-		/*if(internalToAlterKeyIn!=null) {
-			System.out.println("not null internal to replace key in");
-			internalToAlterKeyIn.replaceKey(key, leaf.getRecord(0).getKey());
-			diskManager.writeNode(mapping.get(internalToAlterKeyIn), internalToAlterKeyIn);
-		}*/
-		
 		diskManager.writeMetadata(metadata);
+		
 		
 			
 		
@@ -340,80 +347,47 @@ public class BPlusTree<R extends Record> {
 	 * gets the left sibling of a node which has the same parent
 	 */
 	public Node<R> getLeftSibling(Node<R> node, InternalNode<R> parent) throws IOException, Exception{
-		int leftSiblingPosition;
+		int leftSiblingPosition=getPositionOfLeftSibling(node, parent);
+		if(leftSiblingPosition<=0) return null;
+		Node<R> leftSibling;
 		
-		if(node.type=='L') {
-			leftSiblingPosition=getPositionOfLeftSibling(node, parent);
-			if(leftSiblingPosition>=0) {
-				LeafNode<R> leftSibling=(LeafNode<R>)diskManager.readNode(leftSiblingPosition);
-				mapping.put(leftSibling, leftSiblingPosition);
-				return leftSibling;
-			}
-		}else {
-			leftSiblingPosition=getPositionOfLeftSibling(node, parent);
-			if(leftSiblingPosition>=0) {
-				InternalNode<R> leftSibling=(InternalNode<R>)diskManager.readNode(leftSiblingPosition);
-				mapping.put(leftSibling, leftSiblingPosition);
-				return leftSibling;
-			}
-		}
-		return null;
+		if(node.type=='L')
+			leftSibling=(LeafNode<R>)diskManager.readNode(leftSiblingPosition);
+		else 	
+			leftSibling=(InternalNode<R>)diskManager.readNode(leftSiblingPosition);
+
+		leftSibling.setParent(parent);
+		leftSibling.setBlockPosition(leftSiblingPosition);
+		mapping.put(leftSibling, leftSiblingPosition);
+		return leftSibling;
 	}
 	
 	public Node<R> getRightSibling(Node<R> node, InternalNode<R> parent) throws IOException, Exception{
-		int rightSiblingPosition;
+		int rightSiblingPosition=getPositionOfRightSibling(node, parent);;
+		if(rightSiblingPosition<=0) return null;
 		
-		if(node.type=='L') {
-			rightSiblingPosition=getPositionOfRightSibling(node, parent);
-			if(rightSiblingPosition>=0) {
-				LeafNode<R> rightSibling=(LeafNode<R>)diskManager.readNode(rightSiblingPosition);
-				mapping.put(rightSibling, rightSiblingPosition);
-				return rightSibling;
-			}
-		}else {
-			rightSiblingPosition=getPositionOfRightSibling(node, parent);
-			if(rightSiblingPosition>=0) {
-				InternalNode<R> rightSibling=(InternalNode<R>)diskManager.readNode(rightSiblingPosition);
-				mapping.put(rightSibling, rightSiblingPosition);
-				return rightSibling;
-			}
-		}
-		return null;
+		Node<R> rightSibling;
+		
+		if(node.type=='L') 
+			rightSibling=(LeafNode<R>)diskManager.readNode(rightSiblingPosition);
+		else 
+			rightSibling=(InternalNode<R>)diskManager.readNode(rightSiblingPosition);
+		
+		rightSibling.setParent(parent);
+		rightSibling.setBlockPosition(rightSiblingPosition);
+		mapping.put(rightSibling, rightSiblingPosition);
+		return rightSibling;
 	}
 	
 	public int getPositionOfLeftSibling(Node<R> node, InternalNode<R> parent) throws IOException, Exception{
-		int leftSiblingPosition;
-		Object phantomKey;
+		if(node==null) return -1;
+		return parent.getLeftSibling(node);
 		
-		if(node.type=='L') {
-			leftSiblingPosition=parent.getLeftSibling(((R)((LeafNode<R>)node).getRecords()[0]).getKey());
-			return leftSiblingPosition;
-		}else {
-			if(node.getSize()==0) {
-				phantomKey=((InternalNode<R>)node).getPhantomKey();
-				leftSiblingPosition=parent.getLeftSibling(phantomKey);
-			}
-			else leftSiblingPosition=parent.getLeftSibling(((InternalNode<R>)node).getKeys()[0]);
-			return leftSiblingPosition;
-		}
 	}
 	
 	public int getPositionOfRightSibling(Node<R> node, InternalNode<R> parent) throws IOException, Exception{
 		if(node==null) return -1;
-		int rightSiblingPosition;
-		Object phantomKey;
-		if(node.type=='L') {
-			rightSiblingPosition=parent.getRightSibling(((R)((LeafNode<R>)node).getRecords()[0]).getKey());
-			return rightSiblingPosition;
-		}else {
-			if(node.getSize()==0) {
-				phantomKey=((InternalNode<R>)node).getPhantomKey();
-				rightSiblingPosition=parent.getRightSibling(phantomKey);
-			}
-			else rightSiblingPosition=parent.getRightSibling(((InternalNode<R>)node).getKeys()[0]);
-			
-			return rightSiblingPosition;
-		}
+		return parent.getRightSibling(node);		
 	}
 	
 	//*******************MERGE OPERATIONS 
@@ -425,7 +399,7 @@ public class BPlusTree<R extends Record> {
 		
 		
 		if(left==null) { //if this is the leftmost child of its parent
-			addressOfNextSibling = getPositionOfRightSibling(right, parent);
+			addressOfNextSibling = right.getPositionRight();
 			if(addressOfNextSibling>=0) {
 				sibling=(LeafNode<R>)diskManager.readNode(addressOfNextSibling);
 				sibling.setPositionLeft(mapping.get(node));
@@ -434,19 +408,18 @@ public class BPlusTree<R extends Record> {
 			
 			node.setPositionRight(addressOfNextSibling);
 			right.mergeWithLeftSibling(node, parent, right.getRecord(0).getKey());  //right tymto zanika
-			posOfNewEmpty=mapping.get(right);
+			posOfNewEmpty=mapping.get(right);                                                                        		//!!! pridat novy empty block
 			
 			diskManager.writeNode(mapping.get(node), node);
-			diskManager.writeNode(mapping.get(right), right);
+			//if(sibling !=null) diskManager.writeNode(mapping.get(sibling), sibling);
 			
 			
 			
 		}
 		else { //not the leftmost child , it means can merge with left sibling
-			if(right==null) addressOfNextSibling=-1;
-			else addressOfNextSibling = mapping.get(right);
+			addressOfNextSibling=node.getPositionRight();
 			if(addressOfNextSibling>=0) {
-				sibling=right;
+				sibling=(LeafNode<R>)diskManager.readNode(addressOfNextSibling);
 				sibling.setPositionLeft(mapping.get(left));
 				diskManager.writeNode(addressOfNextSibling, sibling);
 			}
@@ -465,8 +438,7 @@ public class BPlusTree<R extends Record> {
 		diskManager.writeNode(mapping.get(parent), parent);
 		
 		
-		EmptyBlock emptyBlock = new EmptyBlock(-1);
-		diskManager.writeEmptyBlock(posOfNewEmpty, emptyBlock);
+		diskManager.addEmptyBlock(posOfNewEmpty);
 	}
 	
 	public void mergeInternals(InternalNode<R> node, InternalNode<R> right, InternalNode<R> left, InternalNode<R> parent, Object keyToRemove) throws Exception {
@@ -475,17 +447,26 @@ public class BPlusTree<R extends Record> {
 		if(left==null) {
 			right.mergeWithLeftSibling(node, parent, keyToRemove);
 			diskManager.writeNode(mapping.get(node), node);
-			diskManager.writeEmptyBlock(mapping.get(right), emptyBlock);
+			diskManager.addEmptyBlock(mapping.get(right));
 		}
 		else {
 			node.mergeWithLeftSibling(left, parent, keyToRemove);
 			diskManager.writeNode(mapping.get(left), left);
-			diskManager.writeEmptyBlock(mapping.get(node), emptyBlock);
+			diskManager.addEmptyBlock(mapping.get(node));
 		}
 	}
 	
 	
-	
+	private void replaceOldKeys(LinkedList<Node<R>> travers, Object oldKey, Object newKey) throws Exception {
+		for (Node<R> node : travers) {
+			if(node.type=='I') {
+				if(((InternalNode<R>)node).containsKey(oldKey)){
+					((InternalNode<R>)node).replaceKey(oldKey, newKey);
+					diskManager.writeNode(mapping.get(node), node);
+				}
+			}
+		}
+	}
 	
 	
 }

@@ -1,9 +1,10 @@
-package BPlusTreeGUI;
+package BplusTreeTest;
 
 import java.io.IOException;
 import java.net.URL;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Random;
@@ -12,10 +13,10 @@ import java.util.ResourceBundle;
 import BPlusTree.BPlusTree;
 import BPlusTree.LeafNode;
 import BPlusTree.Metadata;
-import Classes.HospitalizationTableViewRecord;
-import Classes.Patient;
+import Classes.Numb;
 import Comparators.Comparators;
 import Converters.Constants;
+import Converters.NumbConverter;
 import Converters.PatientConverter;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -67,17 +68,17 @@ public class MainFrameController implements Initializable {
 	@FXML private TextField hospitalizationDateToField;
 	
 
-	private BPlusTree<Patient> bPlusTree ; //toto sa potom poriesi tak ze sa najprv zvoli ci sa chce strom nacitat zo suboru alebo vytvorit novy a podla toho sa strom inicializuje
+	private BPlusTree<Numb> bPlusTree ; //toto sa potom poriesi tak ze sa najprv zvoli ci sa chce strom nacitat zo suboru alebo vytvorit novy a podla toho sa strom inicializuje
 	private AllBlocksFrameController allBlocksController;
 	private IntervalFindFrameController intervalFindFrameController;
 	
-	private LeafNode<Patient> actualLeafNode;
-	private Patient actualPatient;
+	private LeafNode<Numb> actualLeafNode;
+	private Numb actualNumb;
 	
 	@FXML
 	public void showBlocks() throws Exception {
 		//loading new stage
-		URL url = getClass().getResource("/BPlusTreeGUI/AllBlocksFrame.fxml");
+		URL url = getClass().getResource("/BplusTreeTest/AllBlocksFrame.fxml");
 		FXMLLoader loader = new FXMLLoader(url);
 		ScrollPane root = (ScrollPane)loader.load();
 		allBlocksController=loader.getController();
@@ -100,9 +101,9 @@ public class MainFrameController implements Initializable {
 	public void initialize(URL location, ResourceBundle resources) { //toto tu pre strom neskor nebude
 		try {
 			//loading b+ tree
-			PatientConverter patConverter = new PatientConverter(Comparators.patientComparator);
-			bPlusTree= new BPlusTree<Patient>(Comparators.patientComparator, patConverter, 6000*3, Integer.BYTES, Constants.MAXSIZE_PATIENT);
-			
+			NumbConverter numbConverter = new NumbConverter(Comparators.numbComparator);
+			//bPlusTree= new BPlusTree<Numb>(2,2,Comparators.numbComparator, numbConverter, 100, 4, 14);
+			test();
 			
 			
 			
@@ -140,38 +141,15 @@ public class MainFrameController implements Initializable {
 				System.out.println("Patient not found");
 				return;
 			}
-			actualPatient=actualLeafNode.getRecord((Object)findKey);
-			if(actualPatient==null) {
+			actualNumb=actualLeafNode.getRecord((Object)findKey);
+			if(actualNumb==null) {
 				System.out.println("patient with that number not found");
 				return;
 			}
 			
-			nameField.setText(actualPatient.getName());
-			surnameField.setText(actualPatient.getSurname());
-			personalIDField.setText(actualPatient.getPatientID()+"");
-			
-			SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
-			birthDateField.setText(f.format(actualPatient.getBirthDate()));
-			
-			//hospitalizations
-			ObservableList<HospitalizationTableViewRecord> data = FXCollections.observableList(HospitalizationTableViewRecord.getRecords(actualPatient.getHospitalizations()));       
-
-	        hospitalizationTableView.setItems(data);
-	        TableColumn colStart = new TableColumn("Start");
-	        colStart.setCellValueFactory(new PropertyValueFactory<HospitalizationTableViewRecord, String>("dateStart"));
-	        TableColumn colEnd = new TableColumn("End");
-	        colEnd.setCellValueFactory(new PropertyValueFactory<HospitalizationTableViewRecord, String>("dateEnd"));
-	        TableColumn colDiagnosis = new TableColumn("Diagnosis");
-	        colDiagnosis.setCellValueFactory(new PropertyValueFactory<HospitalizationTableViewRecord, String>("diagnosis"));
-	        
-	        colStart.setPrefWidth(100);
-	        colEnd.setPrefWidth(100);
-	        colDiagnosis.setPrefWidth(300);
-	        
-	        hospitalizationTableView.setMaxWidth(4*130);
-	        hospitalizationTableView.getColumns().setAll(colStart,colEnd,colDiagnosis);
+			surnameField.setText(actualNumb.getS());
+			personalIDField.setText(actualNumb.getN()+"");
 		
-			
 			
 						
 		//}catch(Exception e) {
@@ -185,13 +163,7 @@ public class MainFrameController implements Initializable {
 			Random rnd = new Random(10);
 			int howMany = Integer.parseInt(generateFieldNumberOfRecords.getText());
 			for (int i = 0; i < howMany; i++) {
-				Patient p = new Patient(rnd.nextInt(100000), new Date(0), (char)('A'+rnd.nextInt(26))+"", (char)('A'+rnd.nextInt(26))+"");
-				int hospitalizations=rnd.nextInt(99);
-				for (int j = 0; j < hospitalizations; j++) {
-					p.startHospitalization(new Date(100000*10000), "Test epidemy");
-					p.finishHospitalization(new Date(1000000*100000));
-				}
-				if(rnd.nextBoolean())p.startHospitalization(new Date(123456789), "last diagnosis");
+				Numb p = new Numb(rnd.nextInt(1000));
 				bPlusTree.add(p);
 			}
 	//	}catch(Exception e) {
@@ -200,53 +172,26 @@ public class MainFrameController implements Initializable {
 		
 	}
 	
-	@FXML
-	public void findIntervalButtonClicked() throws Exception {
-		//try {			
-			int minKey=Integer.parseInt(findIntervalFieldFrom.getText());
-			int maxKey=Integer.parseInt(findIntervalFieldTo.getText());
-			LinkedList<Patient> patients = bPlusTree.getRecordsInInterval(minKey, maxKey);
-
-			//loading new stage
-			URL url = getClass().getResource("/BPlusTreeGUI/IntervalFindFrame.fxml");
-			FXMLLoader loader = new FXMLLoader(url);
-			AnchorPane root = (AnchorPane)loader.load();
-			intervalFindFrameController=loader.getController();
-			
-			intervalFindFrameController.fillTableList(patients);
-			
-					
-			Stage stage = new Stage();
-			Scene scene = new Scene(root);
-			stage.setScene(scene);
-			stage.setTitle("Selected patients in interval");
-			stage.show();
-		//}catch(Exception e) {
-			//System.out.println("Probably incorect keys in interval");
-		//}
-	}
+	
 	
 	@FXML
 	public void deleteButtonClicked() throws IOException, Exception {
-		if(actualPatient!=null) bPlusTree.delete(actualPatient.getKey());
+		if(actualNumb!=null) bPlusTree.delete(actualNumb.getKey());
 		actualLeafNode=null;
-		actualPatient=null;
+		actualNumb=null;
 	}
 	
 	@FXML
 	public void createNewButtonClicked() throws IOException, Exception {
 		//try {
 			actualLeafNode=null;
-			actualPatient=null;
+			actualNumb=null;
 				
-			String name=nameField.getText();
-			String surname=surnameField.getText();
+			//String surname=surnameField.getText();
 			int personalID = Integer.parseInt(personalIDField.getText());
+		
 			
-			SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
-			Date birthDate = f.parse(birthDateField.getText());
-			
-			Patient p = new Patient(personalID, birthDate, name, surname);
+			Numb p = new Numb(personalID);
 			bPlusTree.add(p);
 			clear();
 						
@@ -270,47 +215,22 @@ public class MainFrameController implements Initializable {
 	
 	@FXML
 	public void saveButtonClicked() throws Exception {
-		String newName=nameField.getText();
 		String newSurname=surnameField.getText();
 		int newID = Integer.parseInt(personalIDField.getText());
-		
-		SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
-		Date newBirthDate = f.parse(birthDateField.getText());
-		
-		if(newID==actualPatient.getPatientID()) {
-			actualPatient.setBirthDate(newBirthDate);
-			actualPatient.setName(newName);
-			actualPatient.setSurname(newSurname);
+
+		if(newID==actualNumb.getN()) {
+			actualNumb.setS(newSurname);
 			
 			bPlusTree.update(actualLeafNode);
 		}else { //if key was changed
-			bPlusTree.delete(actualPatient.getKey());
-			bPlusTree.add(actualPatient);
+			bPlusTree.delete(actualNumb.getKey());
+			actualNumb.setN(newID);
+			actualNumb.setS(newSurname);
+			bPlusTree.add(actualNumb);
 		}
 		clear();
 	}
 	
-	@FXML
-	public void startHospitalization() throws ParseException {
-		if(actualPatient==null) {
-			System.out.println("Patient hasnt been selected");
-			return;
-		}
-		SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
-		
-		actualPatient.startHospitalization(f.parse(hospitalizationDateFromField.getText()), hospitalizationDiagnosisField.getText());
-	}
-	
-	@FXML
-	public void finishHospitalization() throws ParseException {
-		if(actualPatient==null) {
-			System.out.println("Patient hasnt been selected");
-			return;
-		}		
-		SimpleDateFormat f = new SimpleDateFormat("dd.MM.yyyy");
-		
-		actualPatient.finishHospitalization(f.parse(hospitalizationDateToField.getText()));
-	}
 	
 	public void closeRAF() throws IOException {
 		bPlusTree.getDiskManager().closeRAF();
@@ -397,6 +317,45 @@ public class MainFrameController implements Initializable {
 			e.printStackTrace();
 		};
 	}*/
+	
+	public void test() throws Exception {
+		bPlusTree= new BPlusTree<Numb>(3,3,Comparators.numbComparator, new NumbConverter(Comparators.numbComparator), 1000, 4, 14);
+		Random rnd = new Random(5);
+		
+		ArrayList<Numb> nums = new ArrayList<>();
+		int num;
+		for (int i = 0; i < 3; i++) {
+			System.out.println(i+" start");
+			num=rnd.nextInt(30);
+			for (int j = 0; j < num; j++) {
+				
+				Numb n = new Numb(rnd.nextInt(10000));
+				System.out.println("inserted "+n+" "+i+" "+j);
+				nums.add(n);
+				bPlusTree.add(n);
+			}
+			//testInorder();
+			
+			boolean b=false;
+			num=rnd.nextInt(nums.size());
+			for (int j = 0; j < num; j++) {
+				Numb n = nums.remove(rnd.nextInt(nums.size()-1));
+				System.out.println(n+" "+i+" "+j);
+			//	5561, N#5561 10 87
+				//4643, N#4643 10 88
+				//9449, N#9449 10 89
+				
+				if(i==2 && j==0) {
+					System.out.println(n);
+				//	return;
+				}
+				//9451, N#9451 0 20
+				bPlusTree.delete(n.getKey());
 
+			}
+			
+			//testInorder();
+		}
+	}
 
 }

@@ -5,23 +5,30 @@ public class Metadata {
 	private int positionOfRoot;
 	private int positionOfFirstFreeBlock;
 	private int numberOfRecords;
-	private final int order;
+	private final int internalOrder;
+	private final int leafOrder;
 	private final int keySize;
 	private final int recordSize;
 	private int numberOfBlocks;
 	
-	public Metadata(int blockSize, int positionOfRoot, int positionOfFirstFreeBlock, int numberOfRecords, int order, int keySize, int recordSize, int numberOFBlocks) {
+	public Metadata(int blockSize, int positionOfRoot, int positionOfFirstFreeBlock, int numberOfRecords, int leafOrder,int internalOrder, int keySize, int recordSize, int numberOFBlocks) {
 		super();
 		this.blockSize = blockSize;
 		this.positionOfRoot = positionOfRoot;
 		this.positionOfFirstFreeBlock = positionOfFirstFreeBlock;
 		this.numberOfRecords = numberOfRecords;
-		this.order = order;
+		this.leafOrder = leafOrder;
 		this.keySize=keySize;
 		this.recordSize=recordSize;
 		this.numberOfBlocks=numberOFBlocks;
+		this.internalOrder = internalOrder;
 	}
 	
+	
+	public int getInternalOrder() {
+		return internalOrder;
+	}
+
 	public int getNumberOfBlocks() {
 		return numberOfBlocks;
 	}
@@ -42,8 +49,8 @@ public class Metadata {
 		return numberOfRecords;
 	}
 
-	public int getOrder() {
-		return order;
+	public int getLeafOrder() {
+		return leafOrder;
 	}
 
 	public int getKeySize() {
@@ -73,7 +80,7 @@ public class Metadata {
 	@Override
 	public String toString() {
 		return "METADATA\nBlock size : " + blockSize + "\nPosition of root : " + positionOfRoot + "\nPosition of first free block : "
-				+ positionOfFirstFreeBlock + "\nNumber of records : " + numberOfRecords + "\nOrder : " + order + "\nKey size : "
+				+ positionOfFirstFreeBlock + "\nNumber of records : " + numberOfRecords + "\nLeaf Order : " + leafOrder+ "\nInternal Order : " + internalOrder + "\nKey size : "
 				+ keySize + "\nRecord size : " + recordSize + "\nNumber of blocks : " + numberOfBlocks ;
 	}
 	

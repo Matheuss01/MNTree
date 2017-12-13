@@ -127,7 +127,6 @@ public class PatientConverter extends RecordConverter{
 			a+=hospitalizationsArr[0].length;
 			hospitalizations.add(hospConverter.toHospitalization(hospitalizationsArr[i]));
 		}
-		System.out.println(a);
 		return new Patient(id, birthdate, name, surname,hospitalizations);
 	}
 	

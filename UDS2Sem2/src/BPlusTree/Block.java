@@ -63,7 +63,8 @@ public class Block<R extends Record> {
 			byte[] rootPosArr = new byte[Integer.BYTES];
 			byte[] firstFreeBlockPosArr = new byte[Integer.BYTES];
 			byte[] numberOfRecordsArr = new byte[Integer.BYTES];
-			byte[] orderArr = new byte[Integer.BYTES];
+			byte[] leafOrderArr = new byte[Integer.BYTES];
+			byte[] internalOrderArr = new byte[Integer.BYTES];
 			byte[] keySizeArr = new byte[Integer.BYTES];
 			byte[] recordSizeArr = new byte[Integer.BYTES];
 			byte[] numberOfBlocksArr = new byte[Integer.BYTES];
@@ -84,10 +85,14 @@ public class Block<R extends Record> {
 				numberOfRecordsArr[i]=content[i+a];
 			}
 			a+=numberOfRecordsArr.length;
-			for (int i = 0; i < orderArr.length; i++) {
-				orderArr[i]=content[i+a];
+			for (int i = 0; i < leafOrderArr.length; i++) {
+				leafOrderArr[i]=content[i+a];
 			}
-			a+=orderArr.length;
+			a+=leafOrderArr.length;
+			for (int i = 0; i < internalOrderArr.length; i++) {
+				internalOrderArr[i]=content[i+a];
+			}
+			a+=internalOrderArr.length;
 			for (int i = 0; i < keySizeArr.length; i++) {
 				keySizeArr[i]=content[i+a];
 			}
@@ -105,12 +110,13 @@ public class Block<R extends Record> {
 			int rootPos = ScalarConverter.toInt(rootPosArr);
 			int firstFree = ScalarConverter.toInt(firstFreeBlockPosArr);
 			int numOfRecords = ScalarConverter.toInt(numberOfRecordsArr);
-			int order = ScalarConverter.toInt(orderArr);
+			int leafOrder = ScalarConverter.toInt(leafOrderArr);
+			int internalOrder = ScalarConverter.toInt(internalOrderArr);
 			int keySize = ScalarConverter.toInt(keySizeArr);
 			int recordSize = ScalarConverter.toInt(recordSizeArr);
 			int numberOfBlocks = ScalarConverter.toInt(numberOfBlocksArr);
 			
-			this.content= new Metadata(blockSize,rootPos,firstFree, numOfRecords,order,keySize,recordSize,numberOfBlocks);		
+			this.content= new Metadata(blockSize,rootPos,firstFree, numOfRecords,leafOrder,internalOrder,keySize,recordSize,numberOfBlocks);		
 		}
 		else if(type=='L') { //1 leaf
 			//System.out.println("here");
@@ -137,7 +143,7 @@ public class Block<R extends Record> {
 			int right=ScalarConverter.toInt(rightArr);
 			//System.out.println(size+" "+left+" "+right+" "+metadata.getOrder());
 			
-			Object[] records = new Object[metadata.getOrder()+1];
+			Object[] records = new Object[metadata.getLeafOrder()+1];
 			byte[] record=new byte[metadata.getRecordSize()]; //add record size and key size to metadata
 			for (int i = 0; i < size; i++) {
 				for (int j = 0; j < record.length; j++) {
@@ -146,7 +152,7 @@ public class Block<R extends Record> {
 				records[i]=(R)recConv.toRecord(record);
 				a+=record.length;
 			}
-			LeafNode<R> leaf = new LeafNode<R>(metadata.getOrder(), recConv.getComparator());
+			LeafNode<R> leaf = new LeafNode<R>(metadata.getLeafOrder(), recConv.getComparator());
 			leaf.setPositionLeft(left);
 			leaf.setPositionRight(right);
 			leaf.setSize(size);
@@ -163,10 +169,10 @@ public class Block<R extends Record> {
 			
 			int size=ScalarConverter.toInt(sizeArr);
 			
-			Object[] keys = new Object[metadata.getOrder()+1]; 
-			int[] pointers = new int[metadata.getOrder()+1+1];
+			Object[] keys = new Object[metadata.getInternalOrder()+1]; 
+			int[] pointers = new int[metadata.getInternalOrder()+1+1];
 			byte[] keyArr=new byte[metadata.getKeySize()]; //add record size and key size to metadata
-			for (int i = 0; i < metadata.getOrder(); i++) {
+			for (int i = 0; i < metadata.getInternalOrder(); i++) {
 				for (int j = 0; j < keyArr.length; j++) {
 					keyArr[j]=content[j+a];
 				}
@@ -175,49 +181,19 @@ public class Block<R extends Record> {
 			}
 			
 			byte[] pointerArr=new byte[Integer.BYTES]; //add record size and key size to metadata
-			for (int i = 0; i < metadata.getOrder()+1; i++) {
+			for (int i = 0; i < metadata.getInternalOrder()+1; i++) {
 				for (int j = 0; j < pointerArr.length; j++) {
 					pointerArr[j]=content[j+a];
 				}
 				if(i<=size) pointers[i]=ScalarConverter.toInt(pointerArr);
 				a+=pointerArr.length;
 			}
-			InternalNode<R> internal =new InternalNode<>(metadata.getOrder(), recConv.getComparator());
+			InternalNode<R> internal =new InternalNode<>(metadata.getInternalOrder(), recConv.getComparator());
 			internal.setSize(size);
 			internal.setKeys(keys);
 			internal.setPointers(pointers);
 			this.content= internal;			
 		}
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
 	}
 	
 	
@@ -240,7 +216,8 @@ public class Block<R extends Record> {
 			byte[] rootPosArr = ScalarConverter.toByteArr(((Metadata)content).getPositionOfRoot());
 			byte[] firstFreeBlockPosArr = ScalarConverter.toByteArr(((Metadata)content).getPositionOfFirstFreeBlock());
 			byte[] numberOfRecordsArr = ScalarConverter.toByteArr(((Metadata)content).getNumberOfRecords());
-			byte[] orderArr = ScalarConverter.toByteArr(((Metadata)content).getOrder());
+			byte[] leafOrderArr = ScalarConverter.toByteArr(((Metadata)content).getLeafOrder());
+			byte[] internalOrderArr = ScalarConverter.toByteArr(((Metadata)content).getInternalOrder());
 			byte[] keySizeArr = ScalarConverter.toByteArr(((Metadata)content).getKeySize());
 			byte[] recordSizeArr = ScalarConverter.toByteArr(((Metadata)content).getRecordSize());
 			byte[] numberOfBlocksArr = ScalarConverter.toByteArr(((Metadata)content).getNumberOfBlocks());
@@ -266,10 +243,14 @@ public class Block<R extends Record> {
 				arr[i+a]=numberOfRecordsArr[i];
 			}
 			a+=numberOfRecordsArr.length;
-			for (int i = 0; i < orderArr.length; i++) {
-				arr[i+a]=orderArr[i];
+			for (int i = 0; i < leafOrderArr.length; i++) {
+				arr[i+a]=leafOrderArr[i];
 			}
-			a+=orderArr.length;
+			a+=leafOrderArr.length;
+			for (int i = 0; i < internalOrderArr.length; i++) {
+				arr[i+a]=internalOrderArr[i];
+			}
+			a+=internalOrderArr.length;
 			for (int i = 0; i < keySizeArr.length; i++) {
 				arr[i+a]=keySizeArr[i];
 			}

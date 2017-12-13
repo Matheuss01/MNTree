@@ -21,4 +21,10 @@ public final class Constants {
 	/*public static void main(String[] args) {
 		System.out.println(MAXSIZE_PATIENT);
 	}*/
+	
+	//for leaf node
+	
+	public static final int MAXSIZE_METADATA_LEAF_NODE=Integer.BYTES+Integer.BYTES+Integer.BYTES+Integer.BYTES; //type,size(num of records), right, left
+	public static final int MAXSIZE_METADATA_INTERNAL_NODE=Integer.BYTES+Integer.BYTES; //type,size(num of keys)
+	
 }
